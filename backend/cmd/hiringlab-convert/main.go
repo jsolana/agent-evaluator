@@ -1,6 +1,6 @@
 // Command convert turns the legacy scenarios format (expectedAnswer,
 // expectedTools, forbiddenTools, sources per turn) into a suite with explicit
-// criteria. Usage: convert < old.yaml > suite.yaml
+// criteria. Usage: go run ./cmd/hiringlab-convert < old.yaml > suite.yaml
 // The minimum number of turns is enforced by the server (SUITE_MIN_TURNS).
 package main
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jsolana/agent-evaluator/backend/internal/tracing"
+	"github.com/jsolana/agent-evaluator/backend/agentkit"
 )
 
 // Fixture: a real /ask response recorded from the assigned project (contents trimmed).
@@ -16,7 +16,7 @@ func TestSpansFromRecordedResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	spans, err := Source{}.Spans(context.Background(), tracing.Query{Raw: raw})
+	spans, err := Source{}.Spans(context.Background(), agentkit.TraceQuery{Raw: raw})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestSpansKeepErrorsAndNonSearchTools(t *testing.T) {
 	raw := `{"traces":[
 	  {"tool":"ragGetSourceChunks","arguments":{"sourceId":"d1","limit":8,"offset":0},"durationMs":40,"result":{"chunks":["a","b"]}},
 	  {"tool":"ragSearch","arguments":{"query":"x"},"durationMs":10,"result":null,"error":"timeout"}]}`
-	spans, err := Source{}.Spans(context.Background(), tracing.Query{Raw: json.RawMessage(raw)})
+	spans, err := Source{}.Spans(context.Background(), agentkit.TraceQuery{Raw: json.RawMessage(raw)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,11 +56,11 @@ func TestSpansKeepErrorsAndNonSearchTools(t *testing.T) {
 }
 
 func TestSpansWithoutTraces(t *testing.T) {
-	spans, err := Source{}.Spans(context.Background(), tracing.Query{Raw: json.RawMessage(`{"answer":"hi"}`)})
+	spans, err := Source{}.Spans(context.Background(), agentkit.TraceQuery{Raw: json.RawMessage(`{"answer":"hi"}`)})
 	if err != nil || len(spans) != 0 {
 		t.Fatalf("got %v %v", spans, err)
 	}
-	if _, err := (Source{}).Spans(context.Background(), tracing.Query{Raw: json.RawMessage(`not json`)}); err == nil {
+	if _, err := (Source{}).Spans(context.Background(), agentkit.TraceQuery{Raw: json.RawMessage(`not json`)}); err == nil {
 		t.Fatal("want error on malformed raw response")
 	}
 }

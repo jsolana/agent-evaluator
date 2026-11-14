@@ -14,8 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsolana/agent-evaluator/backend/internal/agent"
-	"github.com/jsolana/agent-evaluator/backend/internal/agent/fake"
+	"github.com/jsolana/agent-evaluator/backend/adapters/fake"
+	tracefake "github.com/jsolana/agent-evaluator/backend/adapters/fake"
+	"github.com/jsolana/agent-evaluator/backend/agentkit"
 	"github.com/jsolana/agent-evaluator/backend/internal/analysis"
 	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
 	"github.com/jsolana/agent-evaluator/backend/internal/domain"
@@ -24,7 +25,6 @@ import (
 	"github.com/jsolana/agent-evaluator/backend/internal/runner"
 	"github.com/jsolana/agent-evaluator/backend/internal/store"
 	"github.com/jsolana/agent-evaluator/backend/internal/suite"
-	tracefake "github.com/jsolana/agent-evaluator/backend/internal/tracing/fake"
 )
 
 type noJudge struct{}
@@ -44,7 +44,7 @@ func startServer() (*httptest.Server, func(), error) {
 		return nil, nil, err
 	}
 	reg := criteria.NewRegistry(noJudge{})
-	ag := fake.New(func(ref string, h []string, in agent.TurnInput) (string, []domain.Span, error) {
+	ag := fake.New(func(ref string, h []string, in agentkit.TurnInput) (string, []domain.Span, error) {
 		if strings.Contains(in.Message, "cuota") {
 			return "La cuota sería de USD 1,500 al mes", []domain.Span{{Kind: "tool", Name: "search", DurationMs: 120}, {Kind: "tool", Name: "getSource", DurationMs: 180}}, nil
 		}

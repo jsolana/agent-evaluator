@@ -55,7 +55,7 @@ Backend only:
 ```bash
 cd backend
 cp .env.example .env     # never commit .env
-go run ./cmd/server      # http://localhost:8080/api/health
+AGENT=fake go run ./cmd/server      # http://localhost:8080/api/health (AGENT is required)
 AGENT=fake JUDGE_PROVIDER=fake go run ./cmd/server   # no credentials, no external calls
 curl --data-binary @../scenarios/example.suite.yaml localhost:8080/api/suites
 ```
@@ -167,7 +167,7 @@ The server loads `.env` from its working directory; real environment variables t
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
-| `AGENT` | **yes** | — | Adapter registered in [`backend/cmd/server/agents.go`](backend/cmd/server/agents.go). Bundled: `fake` (offline) and `hiringlab` ([its settings](backend/internal/agent/hiringlab/README.md)). No default: the evaluator assumes no agent |
+| `AGENT` | **yes** | — | Name of a registered adapter (see [Connect your own agent](#connect-your-own-agent)). `cmd/server` bundles `fake` (offline); `cmd/hiringlab` adds `hiringlab` ([its settings](backend/adapters/hiringlab/README.md)). No default: the evaluator assumes no agent |
 | Adapter variables | with that `AGENT` | — | Each adapter reads its own (URL, credentials…); documented next to the adapter |
 | `JUDGE_PROVIDER` | no | `openai-compatible` | `openai-compatible`, `anthropic` or `fake` |
 | `JUDGE_BASE_URL` | with `openai-compatible` | — | Provider URL including `/v1`; no provider is assumed |
@@ -183,22 +183,92 @@ The server loads `.env` from its working directory; real environment variables t
 
 `GET /api/health` returns 503 if the database or agent configuration is missing. A missing judge configuration is only a warning, because deterministic-only suites still run. The frontend has two optional variables: `VITE_API_TARGET` (default `http://localhost:8080`, used by the dev/preview proxy) and `VITE_API_BASE` (default `/api`).
 
-## Connect another agent
+## Connect your own agent
 
-The core only knows the contracts in [`internal/agent`](backend/internal/agent/agent.go) and [`internal/tracing`](backend/internal/tracing/tracing.go). To evaluate another agent:
+The evaluator is a Go library plus a ready-made program. The only thing you write is an adapter for your agent, in **your own module**; the public contract is [`backend/agentkit`](backend/agentkit) (standard library only). The core never changes and never knows your agent.
 
-1. **Agent adapter** in `backend/internal/agent/<name>/`: implement `Agent` (`NewConversation`) and `Conversation` (`Ref`, `Send`).
-   - Return the answer in `TurnOutput.Text`, plus `Tokens`, `DurationMs`, the raw response in `Raw` and, if available, `EffectiveConfig`.
+```mermaid
+flowchart LR
+  A["your adapter<br/>(agentkit.Agent)"] -- "Register in init()" --> R[(agentkit registry)]
+  M["your main.go<br/>evaluator.Main()"] -- "AGENT=name" --> R
+  M --> C[evaluator core: runner, criteria, judge, store, API]
+```
+
+1. **Implement the contract** (see [`examples/echo`](backend/examples/echo/echo.go), under 60 lines):
+   - `Agent.NewConversation` and `Conversation.Ref` / `Send`. Return the answer in `TurnOutput.Text`, plus `Tokens`, `DurationMs`, the raw response in `Raw` and, if available, `EffectiveConfig`.
    - Classify errors: `ErrRetryable` (safe to resend), `ErrConflict` (a turn is already running) or `ErrFatal`.
    - **Stateful** agent (keeps the conversation by id): return that id from `Ref()` and ignore `TurnInput.History`. **Stateless** agent (e.g. a chat completions API): send `TurnInput.History` with the message; the runner fills it, also after a restart.
-   - Implement `Idempotent() bool` only if the agent deduplicates by `TurnInput.IdempotencyKey`. Without it, an interrupted turn is reported as an execution error instead of being resent.
+   - Optional capabilities, by implementing a small interface: `Idempotent` (the agent deduplicates by `TurnInput.IdempotencyKey`; without it an interrupted turn is reported as an execution error instead of being resent) and `HealthChecker` (`Check` is shown in `/api/health`).
    - `ConversationSpec.Config` carries the evaluation's `agentConfig` JSON as is.
-2. **Trace source** in `backend/internal/tracing/<name>/`: implement `Source.Spans`. Return `nil` if the agent exposes no trace; otherwise map each step to a `domain.Span` (`Kind: "tool"`, tool name, latency), with the input under `domain.SpanAttrArguments` and any retrieved documents in `Documents`.
-3. **Register it** in `backend/cmd/server/agents.go`: one factory that reads its environment variables and returns the agent, the trace source and a health check, plus one entry in `agents`. Run with `AGENT=<name>`.
-4. **Describe it to the judge** with `JUDGE_AGENT_DESCRIPTION`.
-5. **Write a suite.** `regex`, `llm_judge` and `context_retention` work for any agent; `tools_required`, `tools_forbidden` and `sources_retrieved` need a trace source.
+2. **Optionally expose traces** with `TraceSource.Spans`: map each step to an `agentkit.Span` (`Kind: "tool"`, tool name, latency), the input under `SpanAttrArguments` and retrieved documents in `Documents`. Without it the criteria `tools_required`, `tools_forbidden` and `sources_retrieved` cannot be used.
+3. **Register it** from an `init` function. The factory receives an `agentkit.Env` (settings by name) instead of reading the process environment:
 
-Test the adapter with `httptest`, as [`hiringlab_test.go`](backend/internal/agent/hiringlab/hiringlab_test.go) does, and the whole flow with `AGENT=<name> go run ./cmd/server` and a suite.
+   ```go
+   func init() { agentkit.Register("myagent", factory) }
+
+   func factory(env agentkit.Env) (agentkit.Plugin, error) {
+       return agentkit.Plugin{Agent: New(env("MYAGENT_URL"), env("MYAGENT_KEY"))}, nil // Traces is optional
+   }
+   ```
+
+   Do not fail on missing credentials: implement `Check` (`agentkit.Require` helps) so the server starts and `/api/health` explains what is missing.
+4. **Build your program**: import the adapter for its side effect and call `evaluator.Main()`:
+
+   ```go
+   package main
+
+   import (
+       "github.com/jsolana/agent-evaluator/backend/evaluator"
+
+       _ "example.com/me/myagent"
+   )
+
+   func main() { evaluator.Main() }
+   ```
+
+   Run it with `AGENT=myagent MYAGENT_URL=... go run .`. `AGENT` is required: no agent is assumed. Try the whole flow now with `AGENT=echo go run ./cmd/examples` in `backend/`.
+5. **Verify the contract** from your adapter's tests with the conformance suite (checks stable `Ref`, resuming, idempotent replay and health):
+
+   ```go
+   func TestContract(t *testing.T) {
+       agenttest.Run(t, func(*testing.T) agentkit.Agent { return New(url, key) })
+   }
+   ```
+6. **Describe it to the judge** with `JUDGE_AGENT_DESCRIPTION` and **write a suite**. `regex`, `llm_judge` and `context_retention` work for any agent.
+
+An adapter module only imports `agentkit`, so it does not pull the server's dependencies; only your `main` imports `evaluator`. Architecture tests in [`backend/arch`](backend/arch/arch_test.go) enforce that `agentkit` stays standard-library only and that the core never imports an adapter.
+
+### Tutorial: adapting an HTTP agent
+
+[`examples/httpchat`](backend/examples/httpchat/httpchat.go) is a complete adapter for a stateless chat API (`POST /chat` with `{"messages":[...]}`, answering `{"answer","tokens"}`), with its tests. The parts that matter, in the order you would write them:
+
+1. **Settings and health.** The factory reads `HTTPCHAT_URL` and `HTTPCHAT_KEY` through `env` and never fails on missing ones; `Check` (built with `agentkit.Require`) reports them, so the server starts and `/api/health` returns 503 with `HTTPCHAT_URL is not set`.
+2. **Statelessness.** `Ref()` returns `""` and `Send` rebuilds the messages from `TurnInput.History` plus the new question. A stateful API would return its conversation id from `Ref()` and ignore the history.
+3. **Error classification.** A network failure, `429` or `5xx` becomes `ErrRetryable` (the runner resends); any other non-200 or an unexpected body becomes `ErrFatal`. Without `Idempotent`, the runner does not resend a turn that may have reached the agent.
+4. **Output.** `TurnOutput` carries the answer, the raw body (for audit), tokens and the measured duration.
+5. **Tests.** An `httptest` server plays the API; `agenttest.Run` checks the contract and two small tests check the history is resent and the errors are classified.
+
+To try it against a real server, run `AGENT=httpchat HTTPCHAT_URL=https://... HTTPCHAT_KEY=... go run ./cmd/examples` from `backend/`, upload a suite and start an evaluation. Copy the package into your module and rename it to make it yours.
+
+### Develop your adapter in its own module
+
+```bash
+mkdir myeval && cd myeval
+go mod init example.com/me/myeval
+mkdir myagent    # your adapter package: imports agentkit, registers itself
+# main.go: blank-import example.com/me/myeval/myagent and call evaluator.Main()
+```
+
+The evaluator is the Go module `github.com/jsolana/agent-evaluator/backend` (its `go.mod` lives in `backend/`, so release tags must be named `backend/vX.Y.Z`). While you develop, point your module at a local checkout, then resolve the dependencies offline if needed:
+
+```bash
+go mod edit -require=github.com/jsolana/agent-evaluator/backend@v0.0.0 \
+            -replace=github.com/jsolana/agent-evaluator/backend=/path/to/agent-evaluator/backend
+go mod tidy
+AGENT=myagent go run .
+```
+
+Copy `backend/.env.example` as `.env` next to your `main.go`, with `AGENT=myagent` and your adapter's variables; the evaluator loads it from the working directory. When the evaluator is tagged, replace the `replace` with `go get github.com/jsolana/agent-evaluator/backend@<version>`. You can keep the adapter in a separate module (it only needs `agentkit`) and keep the `main` in a thin one.
 
 ## Using the interface
 
@@ -234,15 +304,19 @@ View state (filters, open turn, base run, tab) lives in the URL, so any view can
 
 ```
 backend/
-  cmd/server     wiring: the only place with concrete implementations (agents.go: agent registry)
-  agent/hiringlab/cmd/convert  Hiring Lab only: legacy scenarios format → suite format
+  agentkit/      PUBLIC contract (stdlib only): Agent, Conversation, TraceSource, Span, Registry; agenttest: conformance suite
+  evaluator/     PUBLIC composition root: Main / Run wire the chosen agent with store, runner, judge and API
+  adapters/      bundled adapters, each a package that registers itself: fake, hiringlab
+  examples/      echo (minimal) and httpchat (complete HTTP adapter): templates for your own
+  cmd/server     demo program: evaluator + fake adapter
+  cmd/hiringlab  program with the Hiring Lab adapter · cmd/hiringlab-convert: its legacy format → suite
+  cmd/examples   program with the example adapters (echo, httpchat)
+  arch/          architecture tests (dependency rules)
   internal/
     domain       entities and verdict rules
     suite        YAML parsing and validation
     criteria     Criterion interface, built-ins, registry
     judge        LLM judge and analyzer (OpenAI-compatible, Anthropic, fake)
-    agent        Agent interface (+ optional Idempotent), adapters (fake, hiringlab)
-    tracing      TraceSource interface + adapters
     queue        Queue interface + in-memory implementation
     runner       per-evaluation coordinator + global worker pool
     analysis     second-opinion service

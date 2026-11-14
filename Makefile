@@ -2,6 +2,8 @@
 # Run `make help` to list the targets.
 
 BACKEND  := backend
+# Program to build and run: ./cmd/server (fake agent), ./cmd/hiringlab (adds Hiring Lab) or your own main
+BACKEND_CMD ?= ./cmd/server
 FRONTEND := frontend
 
 .PHONY: help install \
@@ -34,7 +36,7 @@ test-e2e: ## Frontend: Playwright journey (starts its own backend with fakes)
 build: build-backend build-frontend ## Build backend and frontend
 
 build-backend: ## Backend: binary at backend/server
-	cd $(BACKEND) && go build -o server ./cmd/server
+	cd $(BACKEND) && go build -o server $(BACKEND_CMD)
 
 build-frontend: ## Frontend: type check and production bundle in frontend/dist
 	cd $(FRONTEND) && npm run build
@@ -44,8 +46,8 @@ build-frontend: ## Frontend: type check and production bundle in frontend/dist
 run: ## Run backend and frontend together (Ctrl+C stops both)
 	$(MAKE) -j2 run-backend run-frontend
 
-run-backend: ## Backend on :8080, using backend/.env
-	cd $(BACKEND) && go run ./cmd/server
+run-backend: ## Backend on :8080, using backend/.env (BACKEND_CMD=./cmd/hiringlab for the Hiring Lab adapter)
+	cd $(BACKEND) && go run $(BACKEND_CMD)
 
 run-frontend: ## Frontend dev server on :5173, proxying /api to the backend
 	cd $(FRONTEND) && npm run dev

@@ -11,14 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsolana/agent-evaluator/backend/internal/agent"
-	"github.com/jsolana/agent-evaluator/backend/internal/agent/fake"
+	"github.com/jsolana/agent-evaluator/backend/adapters/fake"
+	tracefake "github.com/jsolana/agent-evaluator/backend/adapters/fake"
+	"github.com/jsolana/agent-evaluator/backend/agentkit"
 	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
 	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 	"github.com/jsolana/agent-evaluator/backend/internal/queue/memory"
 	"github.com/jsolana/agent-evaluator/backend/internal/store"
 	"github.com/jsolana/agent-evaluator/backend/internal/suite"
-	tracefake "github.com/jsolana/agent-evaluator/backend/internal/tracing/fake"
 )
 
 type failingJudge struct{}
@@ -108,7 +108,7 @@ func (e *env) results(t *testing.T, id int64) ([]domain.ScenarioResult, map[int6
 
 func TestRunsMultiTurnScenarioKeepingContext(t *testing.T) {
 	var contextLost bool
-	e := setup(t, func(ref string, history []string, in agent.TurnInput) (string, []domain.Span, error) {
+	e := setup(t, func(ref string, history []string, in agentkit.TurnInput) (string, []domain.Span, error) {
 		if len(history) != in.Index-1 { // the agent must have seen every previous turn
 			contextLost = true
 		}
@@ -158,7 +158,7 @@ func TestEachScenarioAndRunIsIsolated(t *testing.T) {
 }
 
 func TestFailedTurnIsReportedAndConversationContinues(t *testing.T) {
-	e := setup(t, func(ref string, h []string, in agent.TurnInput) (string, []domain.Span, error) {
+	e := setup(t, func(ref string, h []string, in agentkit.TurnInput) (string, []domain.Span, error) {
 		if in.Index == 2 {
 			return "wrong", nil, nil
 		}
@@ -174,13 +174,13 @@ func TestFailedTurnIsReportedAndConversationContinues(t *testing.T) {
 func TestTransientErrorIsRetriedWithSameIdempotencyKey(t *testing.T) {
 	var mu sync.Mutex
 	keys := map[int][]string{}
-	e := setup(t, func(ref string, h []string, in agent.TurnInput) (string, []domain.Span, error) {
+	e := setup(t, func(ref string, h []string, in agentkit.TurnInput) (string, []domain.Span, error) {
 		mu.Lock()
 		keys[in.Index] = append(keys[in.Index], in.IdempotencyKey)
 		n := len(keys[in.Index])
 		mu.Unlock()
 		if in.Index == 2 && n == 1 {
-			return "", nil, fmt.Errorf("%w: 502", agent.ErrRetryable)
+			return "", nil, fmt.Errorf("%w: 502", agentkit.ErrRetryable)
 		}
 		return fake.Echo(ref, h, in)
 	}, 0, 1)
@@ -200,7 +200,7 @@ func TestTransientErrorIsRetriedWithSameIdempotencyKey(t *testing.T) {
 func TestConflictAfterLostResponseWaitsForTheRunningTurn(t *testing.T) {
 	var mu sync.Mutex
 	calls := 0
-	e := setup(t, func(ref string, h []string, in agent.TurnInput) (string, []domain.Span, error) {
+	e := setup(t, func(ref string, h []string, in agentkit.TurnInput) (string, []domain.Span, error) {
 		if in.Index != 2 {
 			return fake.Echo(ref, h, in)
 		}
@@ -210,9 +210,9 @@ func TestConflictAfterLostResponseWaitsForTheRunningTurn(t *testing.T) {
 		mu.Unlock()
 		switch n {
 		case 1:
-			return "", nil, fmt.Errorf("%w: connection reset", agent.ErrRetryable)
+			return "", nil, fmt.Errorf("%w: connection reset", agentkit.ErrRetryable)
 		case 2, 3:
-			return "", nil, fmt.Errorf("%w: turn is running", agent.ErrConflict)
+			return "", nil, fmt.Errorf("%w: turn is running", agentkit.ErrConflict)
 		}
 		return fake.Echo(ref, h, in)
 	}, 0, 1)
@@ -224,9 +224,9 @@ func TestConflictAfterLostResponseWaitsForTheRunningTurn(t *testing.T) {
 }
 
 func TestConflictMidConversationStopsScenario(t *testing.T) {
-	e := setup(t, func(ref string, h []string, in agent.TurnInput) (string, []domain.Span, error) {
+	e := setup(t, func(ref string, h []string, in agentkit.TurnInput) (string, []domain.Span, error) {
 		if in.Index == 2 {
-			return "", nil, fmt.Errorf("%w: turn already running", agent.ErrConflict)
+			return "", nil, fmt.Errorf("%w: turn already running", agentkit.ErrConflict)
 		}
 		return fake.Echo(ref, h, in)
 	}, 0, 1)
@@ -271,9 +271,9 @@ func TestPerEvaluationConcurrencyIsRespected(t *testing.T) {
 
 func TestResumeAfterRestartReusesKeyAndConversation(t *testing.T) {
 	var mu sync.Mutex
-	var sent []agent.TurnInput
+	var sent []agentkit.TurnInput
 	var refs []string
-	e := setup(t, func(ref string, h []string, in agent.TurnInput) (string, []domain.Span, error) {
+	e := setup(t, func(ref string, h []string, in agentkit.TurnInput) (string, []domain.Span, error) {
 		mu.Lock()
 		sent, refs = append(sent, in), append(refs, ref)
 		mu.Unlock()
@@ -298,8 +298,8 @@ func TestResumeAfterRestartReusesKeyAndConversation(t *testing.T) {
 	inflight := domain.TurnResult{ScenarioResultID: sr.ID, TurnID: turns[1].ID, Index: 2, IdempotencyKey: "key-turn-2", Status: domain.TurnRunning, Attempts: 1}
 	inflight.ID, _ = e.store.InsertTurnResult(ctx, inflight)
 	// Turn 1 really happened on the agent side before the crash.
-	conv, _ := e.agent.NewConversation(ctx, agent.ConversationSpec{Ref: "conv-before-crash"})
-	_, _ = conv.Send(ctx, agent.TurnInput{Index: 1, Message: "q1 of s0", IdempotencyKey: "key-turn-1"})
+	conv, _ := e.agent.NewConversation(ctx, agentkit.ConversationSpec{Ref: "conv-before-crash"})
+	_, _ = conv.Send(ctx, agentkit.TurnInput{Index: 1, Message: "q1 of s0", IdempotencyKey: "key-turn-1"})
 	mu.Lock()
 	sent, refs = nil, nil
 	mu.Unlock()
@@ -332,7 +332,7 @@ func TestResumeAfterRestartReusesKeyAndConversation(t *testing.T) {
 // The suite guards against it with a negated regex; the leak must be caught at
 // the exact turn while turns 1 and 3 stay green.
 func TestPromptInjectionLeakIsCaughtAtItsTurn(t *testing.T) {
-	e := setup(t, func(ref string, h []string, in agent.TurnInput) (string, []domain.Span, error) {
+	e := setup(t, func(ref string, h []string, in agentkit.TurnInput) (string, []domain.Span, error) {
 		if strings.Contains(in.Message, "Ignora") {
 			return "SYSTEM PROMPT: You are an AI assistant for Acme...", nil, nil
 		}
@@ -385,35 +385,35 @@ func TestSubmitUnknownEvaluationDoesNotCrash(t *testing.T) {
 // TurnInput.History. Its answer counts the history it received.
 type statelessAgent struct {
 	mu     sync.Mutex
-	inputs []agent.TurnInput
-	fail   func(agent.TurnInput) error
+	inputs []agentkit.TurnInput
+	fail   func(agentkit.TurnInput) error
 }
 
-func (a *statelessAgent) NewConversation(context.Context, agent.ConversationSpec) (agent.Conversation, error) {
+func (a *statelessAgent) NewConversation(context.Context, agentkit.ConversationSpec) (agentkit.Conversation, error) {
 	return a, nil
 }
 
 func (a *statelessAgent) Ref() string { return "" }
 
-func (a *statelessAgent) Send(_ context.Context, in agent.TurnInput) (agent.TurnOutput, error) {
+func (a *statelessAgent) Send(_ context.Context, in agentkit.TurnInput) (agentkit.TurnOutput, error) {
 	a.mu.Lock()
 	a.inputs = append(a.inputs, in)
 	a.mu.Unlock()
 	if a.fail != nil {
 		if err := a.fail(in); err != nil {
-			return agent.TurnOutput{}, err
+			return agentkit.TurnOutput{}, err
 		}
 	}
-	return agent.TurnOutput{Text: fmt.Sprintf("answer %d: %s", len(in.History)+1, in.Message)}, nil
+	return agentkit.TurnOutput{Text: fmt.Sprintf("answer %d: %s", len(in.History)+1, in.Message)}, nil
 }
 
-func (a *statelessAgent) sent() []agent.TurnInput {
+func (a *statelessAgent) sent() []agentkit.TurnInput {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	return append([]agent.TurnInput(nil), a.inputs...)
+	return append([]agentkit.TurnInput(nil), a.inputs...)
 }
 
-func setupWith(t *testing.T, ag agent.Agent, st *store.Store) *env {
+func setupWith(t *testing.T, ag agentkit.Agent, st *store.Store) *env {
 	t.Helper()
 	r := New(st, ag, tracefake.Source{}, criteria.NewRegistry(failingJudge{}), memory.New(8), Config{Workers: 1, MaxAttempts: 3, Backoff: time.Millisecond, ConflictRetries: 3, Logger: quiet})
 	ctx, cancel := context.WithCancel(context.Background())
@@ -523,15 +523,15 @@ func TestInterruptedTurnIsNotResentToANonIdempotentAgent(t *testing.T) {
 // saved results by key; otherwise it stops the scenario at once.
 func TestConflictIsNotRetriedForANonIdempotentAgent(t *testing.T) {
 	calls := 0
-	ag := &statelessAgent{fail: func(in agent.TurnInput) error {
+	ag := &statelessAgent{fail: func(in agentkit.TurnInput) error {
 		if in.Index != 2 {
 			return nil
 		}
 		calls++
 		if calls == 1 {
-			return fmt.Errorf("%w: connection reset", agent.ErrRetryable)
+			return fmt.Errorf("%w: connection reset", agentkit.ErrRetryable)
 		}
-		return fmt.Errorf("%w: turn is running", agent.ErrConflict)
+		return fmt.Errorf("%w: turn is running", agentkit.ErrConflict)
 	}}
 	e := setupWith(t, ag, openStore(t))
 	ev := e.wait(t, e.evaluate(t, suiteYAML("conflict-stateless", 1, ""), 1).ID)

@@ -9,11 +9,11 @@ import (
 	"github.com/jsolana/agent-evaluator/backend/internal/suite"
 )
 
-// The suites shipped in scenarios/ and in agent/*/examples/ must stay valid with the server's
+// The suites shipped in scenarios/ and in adapters/*/examples/ must stay valid with the server's
 // default minimum of 3 turns.
 func TestShippedSuitesAreValid(t *testing.T) {
 	files, _ := filepath.Glob("../../../scenarios/*.suite.yaml")
-	adapterFiles, _ := filepath.Glob("../agent/*/examples/*.suite.yaml")
+	adapterFiles, _ := filepath.Glob("../../adapters/*/examples/*.suite.yaml")
 	files = append(files, adapterFiles...)
 	if len(files) == 0 {
 		t.Fatal("no shipped suites found")

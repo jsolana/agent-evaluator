@@ -1,4 +1,4 @@
-// Package hiringlab adapts the Hiring Lab bank assistant (POST /ask) to agent.Agent.
+// Package hiringlab adapts the Hiring Lab bank assistant (POST /ask) to agentkit.Agent.
 // Every Hiring Lab particularity lives here: the URL layout, idempotency header,
 // the JSON-wrapped answer and the error codes.
 package hiringlab
@@ -7,13 +7,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/jsolana/agent-evaluator/backend/internal/agent"
+	"github.com/jsolana/agent-evaluator/backend/agentkit"
 )
 
 type Config struct {
@@ -38,6 +39,18 @@ func New(cfg Config) *Agent {
 	}
 }
 
+// Check reports missing configuration, so the evaluator starts and explains it
+// in its health endpoint instead of failing at launch.
+func (a *Agent) Check(context.Context) error {
+	switch {
+	case a.base == "":
+		return errors.New("HIRING_LAB_BASE_URL is not set")
+	case a.token == "":
+		return errors.New("HIRING_LAB_PROJECT_KEY is not set")
+	}
+	return nil
+}
+
 // Idempotent reports that Hiring Lab deduplicates turns by Idempotency-Key.
 func (a *Agent) Idempotent() bool { return true }
 
@@ -47,13 +60,13 @@ type options struct {
 	KnowledgeVersionID string `json:"knowledgeVersionId,omitempty"`
 }
 
-func (a *Agent) NewConversation(ctx context.Context, spec agent.ConversationSpec) (agent.Conversation, error) {
+func (a *Agent) NewConversation(ctx context.Context, spec agentkit.ConversationSpec) (agentkit.Conversation, error) {
 	var opts options
 	if len(spec.Config) > 0 && string(spec.Config) != "null" {
 		d := json.NewDecoder(bytes.NewReader(spec.Config))
 		d.DisallowUnknownFields()
 		if err := d.Decode(&opts); err != nil {
-			return nil, fmt.Errorf("%w: agentConfig: %v", agent.ErrFatal, err)
+			return nil, fmt.Errorf("%w: agentConfig: %v", agentkit.ErrFatal, err)
 		}
 	}
 	ref := spec.Ref
@@ -101,7 +114,7 @@ type conversation struct {
 
 func (c *conversation) Ref() string { return c.ref }
 
-func (c *conversation) Send(ctx context.Context, in agent.TurnInput) (agent.TurnOutput, error) {
+func (c *conversation) Send(ctx context.Context, in agentkit.TurnInput) (agentkit.TurnOutput, error) {
 	body, _ := json.Marshal(struct {
 		Question       string `json:"question"`
 		ConversationID string `json:"conversationId,omitempty"`
@@ -110,7 +123,7 @@ func (c *conversation) Send(ctx context.Context, in agent.TurnInput) (agent.Turn
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.agent.base+"/ask", bytes.NewReader(body))
 	if err != nil {
-		return agent.TurnOutput{}, fmt.Errorf("%w: %v", agent.ErrFatal, err)
+		return agentkit.TurnOutput{}, fmt.Errorf("%w: %v", agentkit.ErrFatal, err)
 	}
 	req.Header.Set("Authorization", "Bearer "+c.agent.token)
 	req.Header.Set("Content-Type", "application/json")
@@ -118,7 +131,7 @@ func (c *conversation) Send(ctx context.Context, in agent.TurnInput) (agent.Turn
 
 	resp, err := c.agent.http.Do(req)
 	if err != nil {
-		return agent.TurnOutput{}, fmt.Errorf("%w: %v", agent.ErrRetryable, err)
+		return agentkit.TurnOutput{}, fmt.Errorf("%w: %v", agentkit.ErrRetryable, err)
 	}
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(resp.Body)
@@ -137,13 +150,13 @@ func (c *conversation) Send(ctx context.Context, in agent.TurnInput) (agent.Turn
 
 	switch {
 	case resp.StatusCode == http.StatusConflict:
-		return agent.TurnOutput{}, fmt.Errorf("%w: %s", agent.ErrConflict, raw)
+		return agentkit.TurnOutput{}, fmt.Errorf("%w: %s", agentkit.ErrConflict, raw)
 	case resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests:
-		return agent.TurnOutput{}, fmt.Errorf("%w: status %d: %s", agent.ErrRetryable, resp.StatusCode, raw)
+		return agentkit.TurnOutput{}, fmt.Errorf("%w: status %d: %s", agentkit.ErrRetryable, resp.StatusCode, raw)
 	case resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated:
-		return agent.TurnOutput{}, fmt.Errorf("%w: status %d: %s", agent.ErrFatal, resp.StatusCode, raw)
+		return agentkit.TurnOutput{}, fmt.Errorf("%w: status %d: %s", agentkit.ErrFatal, resp.StatusCode, raw)
 	}
-	return agent.TurnOutput{
+	return agentkit.TurnOutput{
 		Text: answerText(r.Answer), Raw: raw, Tokens: r.Tokens,
 		DurationMs: r.DurationMs, EffectiveConfig: compact(r.Snapshot),
 	}, nil

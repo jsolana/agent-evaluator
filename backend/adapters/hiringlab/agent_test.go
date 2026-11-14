@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/jsolana/agent-evaluator/backend/internal/agent"
+	"github.com/jsolana/agent-evaluator/backend/agentkit"
 )
 
 type askCall struct {
@@ -71,11 +71,11 @@ func TestConversationKeepsContextAcrossTurns(t *testing.T) {
 	a, stop := newAgent(t, f)
 	defer stop()
 
-	conv, err := a.NewConversation(context.Background(), agent.ConversationSpec{Config: json.RawMessage(`{"promptId":"p1"}`)})
+	conv, err := a.NewConversation(context.Background(), agentkit.ConversationSpec{Config: json.RawMessage(`{"promptId":"p1"}`)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	out, err := conv.Send(context.Background(), agent.TurnInput{Index: 1, Message: "hola", IdempotencyKey: "key-0001"})
+	out, err := conv.Send(context.Background(), agentkit.TurnInput{Index: 1, Message: "hola", IdempotencyKey: "key-0001"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestConversationKeepsContextAcrossTurns(t *testing.T) {
 	if string(out.EffectiveConfig) != `{"model":"gpt-6-luna","promptId":"p1"}` || len(out.Raw) == 0 {
 		t.Fatalf("snapshot and raw must be kept: %s", out.EffectiveConfig)
 	}
-	if _, err := conv.Send(context.Background(), agent.TurnInput{Index: 2, Message: "y?", IdempotencyKey: "key-0002"}); err != nil {
+	if _, err := conv.Send(context.Background(), agentkit.TurnInput{Index: 2, Message: "y?", IdempotencyKey: "key-0002"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -105,20 +105,20 @@ func TestResumeUsesExistingConversation(t *testing.T) {
 	f := &fakeAsk{}
 	a, stop := newAgent(t, f)
 	defer stop()
-	conv, _ := a.NewConversation(context.Background(), agent.ConversationSpec{Ref: "conv-9"})
-	_, _ = conv.Send(context.Background(), agent.TurnInput{Message: "x", IdempotencyKey: "key-0003"})
+	conv, _ := a.NewConversation(context.Background(), agentkit.ConversationSpec{Ref: "conv-9"})
+	_, _ = conv.Send(context.Background(), agentkit.TurnInput{Message: "x", IdempotencyKey: "key-0003"})
 	if f.calls[0].body["conversationId"] != "conv-9" {
 		t.Fatalf("resumed conversation must send its ref: %v", f.calls[0].body)
 	}
 }
 
 func TestErrorClassification(t *testing.T) {
-	tests := map[int]error{409: agent.ErrConflict, 502: agent.ErrRetryable, 504: agent.ErrRetryable, 400: agent.ErrFatal, 401: agent.ErrFatal}
+	tests := map[int]error{409: agentkit.ErrConflict, 502: agentkit.ErrRetryable, 504: agentkit.ErrRetryable, 400: agentkit.ErrFatal, 401: agentkit.ErrFatal}
 	for status, want := range tests {
 		f := &fakeAsk{status: []int{status}}
 		a, stop := newAgent(t, f)
-		conv, _ := a.NewConversation(context.Background(), agent.ConversationSpec{})
-		_, err := conv.Send(context.Background(), agent.TurnInput{Message: "x", IdempotencyKey: "key-0004"})
+		conv, _ := a.NewConversation(context.Background(), agentkit.ConversationSpec{})
+		_, err := conv.Send(context.Background(), agentkit.TurnInput{Message: "x", IdempotencyKey: "key-0004"})
 		stop()
 		if !errors.Is(err, want) {
 			t.Errorf("status %d: got %v, want %v", status, err, want)
@@ -131,16 +131,16 @@ func TestErrorClassification(t *testing.T) {
 
 func TestNetworkErrorIsRetryable(t *testing.T) {
 	a := New(Config{BaseURL: "http://127.0.0.1:1/p", Token: "t"})
-	conv, _ := a.NewConversation(context.Background(), agent.ConversationSpec{})
-	_, err := conv.Send(context.Background(), agent.TurnInput{Message: "x", IdempotencyKey: "key-0005"})
-	if !errors.Is(err, agent.ErrRetryable) {
+	conv, _ := a.NewConversation(context.Background(), agentkit.ConversationSpec{})
+	_, err := conv.Send(context.Background(), agentkit.TurnInput{Message: "x", IdempotencyKey: "key-0005"})
+	if !errors.Is(err, agentkit.ErrRetryable) {
 		t.Fatalf("got %v", err)
 	}
 }
 
 func TestConfigIsValidated(t *testing.T) {
 	a := New(Config{BaseURL: "http://x/p", Token: "t"})
-	if _, err := a.NewConversation(context.Background(), agent.ConversationSpec{Config: json.RawMessage(`{"prompt_id":"typo"}`)}); err == nil {
+	if _, err := a.NewConversation(context.Background(), agentkit.ConversationSpec{Config: json.RawMessage(`{"prompt_id":"typo"}`)}); err == nil {
 		t.Fatal("unknown config fields must be rejected")
 	}
 }
@@ -155,7 +155,7 @@ func TestLabelsCreateATaggedConversation(t *testing.T) {
 	f := &fakeAsk{}
 	a, stop := newAgent(t, f)
 	defer stop()
-	conv, err := a.NewConversation(context.Background(), agent.ConversationSpec{Labels: map[string]string{"evaluation": "7", "scenario": "mortgage"}})
+	conv, err := a.NewConversation(context.Background(), agentkit.ConversationSpec{Labels: map[string]string{"evaluation": "7", "scenario": "mortgage"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestLabelsCreateATaggedConversation(t *testing.T) {
 	if meta["scenario"] != "mortgage" || meta["evaluation"] != "7" || data["title"] == "" {
 		t.Fatalf("tagging body = %v", f.conversations[0])
 	}
-	_, _ = conv.Send(context.Background(), agent.TurnInput{Message: "x", IdempotencyKey: "key-0006"})
+	_, _ = conv.Send(context.Background(), agentkit.TurnInput{Message: "x", IdempotencyKey: "key-0006"})
 	if f.calls[0].body["conversationId"] != "conv-tagged" {
 		t.Fatalf("first turn must use the tagged conversation: %v", f.calls[0].body)
 	}
@@ -177,11 +177,11 @@ func TestTaggingIsBestEffortAndSkippedOnResume(t *testing.T) {
 	f := &fakeAsk{convStatus: 500}
 	a, stop := newAgent(t, f)
 	defer stop()
-	conv, err := a.NewConversation(context.Background(), agent.ConversationSpec{Labels: map[string]string{"scenario": "s"}})
+	conv, err := a.NewConversation(context.Background(), agentkit.ConversationSpec{Labels: map[string]string{"scenario": "s"}})
 	if err != nil || conv.Ref() != "" {
 		t.Fatalf("a tagging failure must fall back to an untagged conversation: ref=%q err=%v", conv.Ref(), err)
 	}
-	resumed, _ := a.NewConversation(context.Background(), agent.ConversationSpec{Ref: "conv-1", Labels: map[string]string{"scenario": "s"}})
+	resumed, _ := a.NewConversation(context.Background(), agentkit.ConversationSpec{Ref: "conv-1", Labels: map[string]string{"scenario": "s"}})
 	if resumed.Ref() != "conv-1" || len(f.conversations) != 1 {
 		t.Fatalf("resume must not create a new conversation: %v", f.conversations)
 	}

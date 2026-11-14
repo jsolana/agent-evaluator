@@ -20,12 +20,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jsolana/agent-evaluator/backend/internal/agent"
+	"github.com/jsolana/agent-evaluator/backend/agentkit"
 	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
 	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 	"github.com/jsolana/agent-evaluator/backend/internal/queue"
 	"github.com/jsolana/agent-evaluator/backend/internal/store"
-	"github.com/jsolana/agent-evaluator/backend/internal/tracing"
 )
 
 const Topic = "evaluations"
@@ -65,8 +64,8 @@ type Config struct {
 
 type Runner struct {
 	store    Store
-	agent    agent.Agent
-	traces   tracing.Source
+	agent    agentkit.Agent
+	traces   agentkit.TraceSource
 	criteria CriteriaBuilder
 	queue    queue.Queue
 	cfg      Config
@@ -80,7 +79,7 @@ type task struct {
 	done       func()
 }
 
-func New(st Store, ag agent.Agent, tr tracing.Source, cb CriteriaBuilder, q queue.Queue, cfg Config) *Runner {
+func New(st Store, ag agentkit.Agent, tr agentkit.TraceSource, cb CriteriaBuilder, q queue.Queue, cfg Config) *Runner {
 	if cfg.Workers <= 0 {
 		cfg.Workers = 4
 	}
@@ -264,7 +263,7 @@ func (r *Runner) runScenario(ctx context.Context, t task) {
 	for _, tr := range existing {
 		byIndex[tr.Index] = tr
 	}
-	conv, err := r.agent.NewConversation(ctx, agent.ConversationSpec{
+	conv, err := r.agent.NewConversation(ctx, agentkit.ConversationSpec{
 		Config: t.evaluation.AgentConfig, Metadata: t.scenario.Metadata, Ref: sr.ConversationRef,
 		Labels: map[string]string{
 			"evaluation": strconv.FormatInt(t.evaluation.ID, 10), "evaluationLabel": t.evaluation.Label,
@@ -329,8 +328,8 @@ func (r *Runner) runScenario(ctx context.Context, t task) {
 // key. For an idempotent agent, a 409 after an earlier attempt with that key
 // means it may still be processing it: wait and ask again with the same key,
 // which returns the saved result once the turn completes.
-func (r *Runner) send(ctx context.Context, conv agent.Conversation, tr *domain.TurnResult, turn domain.Turn, history []criteria.Exchange) (agent.TurnOutput, error) {
-	in := agent.TurnInput{Index: turn.Index, Message: turn.Question, IdempotencyKey: tr.IdempotencyKey, History: history}
+func (r *Runner) send(ctx context.Context, conv agentkit.Conversation, tr *domain.TurnResult, turn domain.Turn, history []criteria.Exchange) (agentkit.TurnOutput, error) {
+	in := agentkit.TurnInput{Index: turn.Index, Message: turn.Question, IdempotencyKey: tr.IdempotencyKey, History: history}
 	retries, conflicts := 0, 0
 	for {
 		previous := tr.Attempts > 0
@@ -342,31 +341,31 @@ func (r *Runner) send(ctx context.Context, conv agent.Conversation, tr *domain.T
 		}
 		var wait time.Duration
 		switch {
-		case errors.Is(err, agent.ErrRetryable) && retries < r.cfg.MaxAttempts-1:
+		case errors.Is(err, agentkit.ErrRetryable) && retries < r.cfg.MaxAttempts-1:
 			wait = r.cfg.Backoff << retries
 			retries++
-		case errors.Is(err, agent.ErrConflict) && previous && r.idempotent() && conflicts < r.cfg.ConflictRetries:
+		case errors.Is(err, agentkit.ErrConflict) && previous && r.idempotent() && conflicts < r.cfg.ConflictRetries:
 			wait = r.cfg.Backoff << conflicts
 			conflicts++
 		default:
-			return agent.TurnOutput{}, err
+			return agentkit.TurnOutput{}, err
 		}
 		select {
 		case <-ctx.Done():
-			return agent.TurnOutput{}, ctx.Err()
+			return agentkit.TurnOutput{}, ctx.Err()
 		case <-time.After(wait):
 		}
 	}
 }
 
 // evaluateTurn stores the response, its trace and every criterion result.
-func (r *Runner) evaluateTurn(ctx context.Context, evaluationID int64, tr domain.TurnResult, turn domain.Turn, out agent.TurnOutput, history []criteria.Exchange) domain.TurnResult {
+func (r *Runner) evaluateTurn(ctx context.Context, evaluationID int64, tr domain.TurnResult, turn domain.Turn, out agentkit.TurnOutput, history []criteria.Exchange) domain.TurnResult {
 	tr.ResponseText, tr.ResponseRaw, tr.Tokens, tr.DurationMs = out.Text, out.Raw, out.Tokens, out.DurationMs
 	if len(out.EffectiveConfig) > 0 {
 		_ = r.store.SetEffectiveConfig(ctx, evaluationID, out.EffectiveConfig)
 	}
 
-	spans, err := r.traces.Spans(ctx, tracing.Query{TraceRef: out.TraceRef, Raw: out.Raw})
+	spans, err := r.traces.Spans(ctx, agentkit.TraceQuery{TraceRef: out.TraceRef, Raw: out.Raw})
 	if err != nil {
 		tr.Error = "trace extraction: " + err.Error()
 	}
@@ -406,7 +405,7 @@ func (r *Runner) evaluateCriterion(ctx context.Context, c domain.Criterion, in c
 
 // idempotent reports whether the agent deduplicates turns by idempotency key.
 func (r *Runner) idempotent() bool {
-	i, ok := r.agent.(agent.Idempotent)
+	i, ok := r.agent.(agentkit.Idempotent)
 	return ok && i.Idempotent()
 }
 

@@ -5,6 +5,8 @@ package domain
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/jsolana/agent-evaluator/backend/agentkit"
 )
 
 // Definition side: a versioned suite of multi-turn scenarios.
@@ -115,49 +117,18 @@ type TurnResult struct {
 	Error            string          `json:"error,omitempty"`
 }
 
-// Exchange is one completed user/agent turn of a conversation.
-type Exchange struct {
-	Question string `json:"question"`
-	Answer   string `json:"answer"`
-}
-
-// Attribute keys of Span.Attributes shared by every trace source, so the core
-// can read them without knowing which adapter produced the span.
-const (
-	SpanAttrArguments = "arguments" // input of a tool call
-	SpanAttrResult    = "result"    // output of a tool call not already mapped to Documents
+// Exchange, Span and Document are part of the public agent contract; the
+// domain re-exports them so the rest of the core keeps one vocabulary.
+type (
+	Exchange = agentkit.Exchange
+	Span     = agentkit.Span
+	Document = agentkit.Document
 )
 
-// Span is one step of a turn's trace (a tool call today, an LLM call in other systems).
-type Span struct {
-	SpanID     string          `json:"spanId"`
-	ParentID   string          `json:"parentId"`
-	Seq        int             `json:"seq"`
-	Kind       string          `json:"kind"` // tool | llm | retrieval | other
-	Name       string          `json:"name"`
-	Start      time.Time       `json:"start"`
-	DurationMs int64           `json:"durationMs"`
-	Attributes json.RawMessage `json:"attributes,omitempty"`
-	Documents  []Document      `json:"documents,omitempty"`
-	Status     string          `json:"status"`
-	Error      string          `json:"error,omitempty"`
-}
-
-// Arguments returns the tool-call input stored under SpanAttrArguments, or nil.
-func (s Span) Arguments() json.RawMessage {
-	var attrs map[string]json.RawMessage
-	if json.Unmarshal(s.Attributes, &attrs) != nil {
-		return nil
-	}
-	return attrs[SpanAttrArguments]
-}
-
-type Document struct {
-	Rank    int    `json:"rank"`
-	Title   string `json:"title"`
-	URL     string `json:"url"`
-	Content string `json:"content"`
-}
+const (
+	SpanAttrArguments = agentkit.SpanAttrArguments
+	SpanAttrResult    = agentkit.SpanAttrResult
+)
 
 type CriterionResult struct {
 	ID               int64    `json:"id"`

@@ -1,13 +1,13 @@
-// Package agent defines the contract of the system under evaluation. Concrete
-// adapters (e.g. fake) live in subpackages; the core only sees this API.
-package agent
+// Package agentkit is the public contract between the evaluator and the system
+// under evaluation. To evaluate your own agent, implement Agent (and optionally
+// TraceSource), register a Factory with Register from an init function and run
+// the evaluator from your own main. It depends on the standard library only.
+package agentkit
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-
-	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 )
 
 // Error classes let the runner decide on retries without knowing the adapter.
@@ -26,6 +26,13 @@ type ConversationSpec struct {
 
 type Agent interface {
 	NewConversation(ctx context.Context, spec ConversationSpec) (Conversation, error)
+}
+
+// HealthChecker is an optional capability: agents that can verify their own
+// configuration or reachability implement it, and the evaluator reports the
+// result in its health endpoint. A failing check does not stop the server.
+type HealthChecker interface {
+	Check(ctx context.Context) error
 }
 
 // Idempotent is an optional capability: agents that deduplicate turns by
@@ -47,7 +54,7 @@ type TurnInput struct {
 	// History holds the completed turns of this conversation, also after a
 	// restart. Agents that keep the conversation server-side may ignore it;
 	// stateless agents (e.g. a chat completions API) send it with the message.
-	History []domain.Exchange
+	History []Exchange
 }
 
 type TurnOutput struct {
