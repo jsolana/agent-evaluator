@@ -167,7 +167,7 @@ The server loads `.env` from its working directory; real environment variables t
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
-| `AGENT` | **yes** | — | Name of a registered adapter (see [Connect your own agent](#connect-your-own-agent)). `cmd/server` bundles `fake` (offline); `cmd/hiringlab` adds `hiringlab` ([its settings](backend/adapters/hiringlab/README.md)). No default: the evaluator assumes no agent |
+| `AGENT` | **yes** | — | Name of a registered adapter (see [Connect your own agent](#connect-your-own-agent-in-go)). `cmd/server` bundles `httpagent` (any REST agent, from a YAML file) and `fake` (offline); `cmd/hiringlab` adds `hiringlab` ([its settings](backend/adapters/hiringlab/README.md)). No default: the evaluator assumes no agent |
 | Adapter variables | with that `AGENT` | — | Each adapter reads its own (URL, credentials…); documented next to the adapter |
 | `JUDGE_PROVIDER` | no | `openai-compatible` | `openai-compatible`, `anthropic` or `fake` |
 | `JUDGE_BASE_URL` | with `openai-compatible` | — | Provider URL including `/v1`; no provider is assumed |
@@ -183,9 +183,40 @@ The server loads `.env` from its working directory; real environment variables t
 
 `GET /api/health` returns 503 if the database or agent configuration is missing. A missing judge configuration is only a warning, because deterministic-only suites still run. The frontend has two optional variables: `VITE_API_TARGET` (default `http://localhost:8080`, used by the dev/preview proxy) and `VITE_API_BASE` (default `/api`).
 
-## Connect your own agent
+## Evaluate a REST agent without code
 
-The evaluator is a Go library plus a ready-made program. The only thing you write is an adapter for your agent, in **your own module**; the public contract is [`backend/agentkit`](backend/agentkit) (standard library only). The core never changes and never knows your agent.
+`cmd/server` bundles `httpagent`, a generic adapter driven by a YAML file: where to call, how to build the request from the conversation and where to find the answer. No Go and no build needed:
+
+```bash
+cd backend
+AGENT=httpagent HTTPAGENT_CONFIG=examples/httpagent/httpchat.agent.yaml \
+HTTPCHAT_URL=https://my-agent.example.com HTTPCHAT_KEY=... go run ./cmd/server
+```
+
+```yaml
+baseUrl: ${HTTPCHAT_URL}                 # ${NAME} = setting from the environment or .env
+headers: {Authorization: "Bearer ${HTTPCHAT_KEY}"}
+conversation: {mode: stateless}          # stateless: resend the history | stateful: send back response.ref
+turn:
+  path: /chat                            # method defaults to POST
+  body: '{"messages": {{ json .Messages }}}'   # text/template that renders JSON
+response:
+  text: answer                           # dotted path: "data.reply", "choices.0.message.content"
+  tokens: usage.total                    # optional
+errors: {retryable: [429, 5xx]}          # default; also conflict: [409]
+```
+
+- **Template data:** `.Message`, `.Index`, `.Ref`, `.IdempotencyKey`, `.History`, `.Messages` (user/assistant pairs plus the current message) and `.Config` (the evaluation's `agentConfig`). `json` renders and escapes any value.
+- **Idempotency:** set `turn.idempotencyHeader` only if the API deduplicates by it; the adapter then declares itself `Idempotent`.
+- **Traces (optional):** a `traces` section maps an array of the response to spans and documents, which enables `tools_required`, `tools_forbidden` and `sources_retrieved`.
+- **Health:** every `${NAME}` the file uses must be set; if not, the server still starts and `/api/health` names the missing one. The file is validated at start-up (unknown fields, bad templates and bad status codes fail with a clear message).
+- **Limits:** no streaming, token refresh or several calls per turn. For those, write an adapter in Go (next section): it plugs into the same contract, so suites and criteria do not change.
+
+The full annotated example is [`examples/httpagent/httpchat.agent.yaml`](backend/examples/httpagent/httpchat.agent.yaml).
+
+## Connect your own agent in Go
+
+If the YAML description is not enough, the evaluator is a Go library plus a ready-made program. The only thing you write is an adapter for your agent, in **your own module**; the public contract is [`backend/agentkit`](backend/agentkit) (standard library only). The core never changes and never knows your agent.
 
 ```mermaid
 flowchart LR
@@ -306,9 +337,9 @@ View state (filters, open turn, base run, tab) lives in the URL, so any view can
 backend/
   agentkit/      PUBLIC contract (stdlib only): Agent, Conversation, TraceSource, Span, Registry; agenttest: conformance suite
   evaluator/     PUBLIC composition root: Main / Run wire the chosen agent with store, runner, judge and API
-  adapters/      bundled adapters, each a package that registers itself: fake, hiringlab
-  examples/      echo (minimal) and httpchat (complete HTTP adapter): templates for your own
-  cmd/server     demo program: evaluator + fake adapter
+  adapters/      bundled adapters, each a package that registers itself: httpagent (YAML-driven REST), fake, hiringlab
+  examples/      echo and httpchat (Go adapters, templates for your own) · httpagent (YAML for the same agent)
+  cmd/server     ready-made program: evaluator + httpagent + fake adapters
   cmd/hiringlab  program with the Hiring Lab adapter · cmd/hiringlab-convert: its legacy format → suite
   cmd/examples   program with the example adapters (echo, httpchat)
   arch/          architecture tests (dependency rules)

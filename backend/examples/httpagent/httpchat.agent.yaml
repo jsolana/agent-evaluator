@@ -1,0 +1,43 @@
+# The same agent as backend/examples/httpchat, described instead of coded.
+#   AGENT=httpagent HTTPAGENT_CONFIG=examples/httpagent/httpchat.agent.yaml \
+#   HTTPCHAT_URL=https://... HTTPCHAT_KEY=... go run ./cmd/server
+#
+# Every ${NAME} is a setting read from the environment (or .env); if one is
+# missing the server still starts and /api/health says which.
+baseUrl: ${HTTPCHAT_URL}
+headers:
+  Authorization: "Bearer ${HTTPCHAT_KEY}"
+
+# stateless: the API keeps no conversation, so the history is resent every turn.
+# stateful: the API returns a conversation id (response.ref) that is sent back.
+conversation:
+  mode: stateless
+
+turn:
+  method: POST            # default
+  path: /chat
+  # Go text/template that must render JSON. Available: .Message .Index .Ref
+  # .IdempotencyKey .History .Messages (user/assistant pairs + current message)
+  # .Config (the evaluation's agentConfig). `json` renders and escapes a value.
+  body: '{"messages": {{ json .Messages }}}'
+  # idempotencyHeader: Idempotency-Key   # set it only if the API deduplicates by it
+
+# Dotted paths into the JSON response: "answer", "data.reply", "choices.0.message.content".
+response:
+  text: answer
+  tokens: tokens          # optional
+
+# Status codes or classes. Defaults: retryable [429, 5xx]; everything else non-2xx is fatal.
+errors:
+  retryable: [429, 5xx]
+  # conflict: [409]       # a turn is already running
+
+# Optional. Without it the agent exposes no trace, and the criteria that need
+# one (tools_required, tools_forbidden, sources_retrieved) cannot be used.
+# traces:
+#   from: calls           # array in the response
+#   name: tool
+#   arguments: args
+#   durationMs: ms
+#   error: error
+#   documents: {from: results, url: url, title: title, content: content}
