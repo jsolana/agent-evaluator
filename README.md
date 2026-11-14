@@ -6,7 +6,7 @@
 
 A service and web interface for evaluating **conversational agents through multi-turn scenarios**. Every scenario runs in its own isolated conversation and **every turn is judged** with an explanation and evidence, so you can see exactly where a conversation breaks, annotate it, ask for a second opinion and compare runs over time.
 
-It is **agent-agnostic**: the evaluated agent, its traces, the LLM judge and the queue are interfaces. Any agent plugs in with two small adapters and one registry entry.
+It is **agent-agnostic**: the evaluated agent, its traces, the LLM judge and the queue are interfaces. There are two ways to evaluate your agent: describe its REST API in a **YAML file** (no code, [`httpagent`](#evaluate-a-rest-agent-without-code)) or write an **adapter in Go** against a small public SDK ([`agentkit`](#connect-your-own-agent-in-go)).
 
 | Component | Contents |
 |---|---|
@@ -37,7 +37,12 @@ make install     # frontend dependencies, once
 make run-fake    # fake agent and judge, no credentials: http://localhost:5173
 ```
 
-To evaluate a real agent, copy `backend/.env.example` to `backend/.env`, fill in the [variables](#configuration) and run `make run`.
+To evaluate a real agent, copy `backend/.env.example` to `backend/.env`, choose how it is connected and run `make run`:
+
+- **REST agent, no code:** `AGENT=httpagent` plus `HTTPAGENT_CONFIG=<your YAML>` ([how](#evaluate-a-rest-agent-without-code)).
+- **Anything else:** write an adapter in Go and run your own program ([how](#connect-your-own-agent-in-go)); `make run-backend BACKEND_CMD=./cmd/mine` runs it.
+
+The [variables](#configuration) are described below.
 
 | Goal | Backend | Frontend | Both |
 |---|---|---|---|
@@ -106,7 +111,7 @@ sequenceDiagram
 ### Design principles
 
 - **Turn-level evaluation with its own runner**, instead of judging whole conversations.
-- **Ports and adapters.** The evaluated agent, its trace source, the LLM judge and the queue are interfaces; fakes power the tests and offline demos. Stateful or stateless, idempotent or not, any agent fits ([connect another agent](#connect-another-agent)). Traces are queried separately from the answer (OpenTelemetry-style), not assumed inline.
+- **Ports and adapters.** The evaluated agent, its trace source, the LLM judge and the queue are interfaces; fakes power the tests and offline demos. Stateful or stateless, idempotent or not, any agent fits ([YAML](#evaluate-a-rest-agent-without-code) or [Go](#connect-your-own-agent-in-go)). Traces are queried separately from the answer (OpenTelemetry-style), not assumed inline.
 - **The backend computes; the frontend presents.** Verdicts, comparison and aggregates live in one tested place.
 - **Immutable, versioned suites.** Comparison matches scenarios by `key` and turns by index, and flags changed rubrics so they are not mistaken for agent changes.
 - **Reliable execution.** Every turn and its idempotency key are persisted before sending, and retries reuse the key. A turn that may still be running on the agent (409 after a lost response) is awaited, not resent. Unfinished work resumes after a restart.
@@ -159,7 +164,7 @@ scenarios:
 | `llm_judge` | LLM | answer satisfies `expected`, given history and documents |
 | `context_retention` | LLM | answer uses the context from previous turns |
 
-Uploading a suite with the same name creates a new version; a run's definition is never modified. The minimum number of turns per scenario is set by the server (`SUITE_MIN_TURNS`). A generic example, runnable with the fake agent, is in [`scenarios/example.suite.yaml`](scenarios/example.suite.yaml); adapters may ship their own under `backend/internal/agent/<name>/examples/`.
+Uploading a suite with the same name creates a new version; a run's definition is never modified. The minimum number of turns per scenario is set by the server (`SUITE_MIN_TURNS`). A generic example, runnable with the fake agent, is in [`scenarios/example.suite.yaml`](scenarios/example.suite.yaml); adapters may ship their own under `backend/adapters/<name>/examples/`.
 
 ## Configuration
 
@@ -390,6 +395,7 @@ scenarios/       agent-agnostic example suites
 
 ## Roadmap
 
+- Custom criteria registered from an adapter's module (today criteria are built in), and a tagged release of the Go module so adapters can `go get` it.
 - Users and authorization (today a single-user local tool; annotation authors are free text).
 - A real broker, multiple instances and a database other than SQLite.
 - Cancelling or retrying a single scenario, repetitions with variance, re-judging stored transcripts without re-running the agent.
