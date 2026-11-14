@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/jsolana/agent-evaluator/backend/agentkit"
+	"github.com/jsolana/agent-evaluator/backend/criterionkit"
 	"github.com/jsolana/agent-evaluator/backend/internal/analysis"
 	"github.com/jsolana/agent-evaluator/backend/internal/api"
 	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
@@ -30,9 +31,10 @@ import (
 
 // Config is everything Run needs; nothing is read from the process environment.
 type Config struct {
-	Registry *agentkit.Registry // adapters to choose from; agentkit.Default when nil
-	Env      agentkit.Env       // settings: AGENT, PORT, DB_PATH, JUDGE_*, ...; the process environment when nil
-	Logger   *slog.Logger       // slog.Default when nil
+	Registry *agentkit.Registry     // adapters to choose from; agentkit.Default when nil
+	Criteria *criterionkit.Registry // custom criteria to offer to suites; criterionkit.Default when nil
+	Env      agentkit.Env           // settings: AGENT, PORT, DB_PATH, JUDGE_*, ...; the process environment when nil
+	Logger   *slog.Logger           // slog.Default when nil
 }
 
 // Main runs the evaluator as a program: it loads .env, serves until
@@ -52,6 +54,9 @@ func Main() {
 func Run(ctx context.Context, cfg Config) error {
 	if cfg.Registry == nil {
 		cfg.Registry = agentkit.Default
+	}
+	if cfg.Criteria == nil {
+		cfg.Criteria = criterionkit.Default
 	}
 	if cfg.Env == nil {
 		cfg.Env = os.Getenv
@@ -84,6 +89,9 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 	registry := criteria.NewRegistry(judgeImpl)
+	if err := registry.Adopt(cfg.Criteria); err != nil {
+		return err
+	}
 
 	plugin, err := cfg.Registry.Build(getenv("AGENT"), getenv)
 	if err != nil {

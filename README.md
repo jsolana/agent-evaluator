@@ -295,7 +295,7 @@ mkdir myagent    # your adapter package: imports agentkit, registers itself
 # main.go: blank-import example.com/me/myeval/myagent and call evaluator.Main()
 ```
 
-The evaluator is the Go module `github.com/jsolana/agent-evaluator/backend` (its `go.mod` lives in `backend/`, so release tags are named `backend/vX.Y.Z`; the first is `backend/v0.1.0`). Add it with `go get github.com/jsolana/agent-evaluator/backend@v0.1.0`. To develop against a local checkout instead, point your module at it, then resolve the dependencies offline if needed:
+The evaluator is the Go module `github.com/jsolana/agent-evaluator/backend` (its `go.mod` lives in `backend/`, so release tags are named `backend/vX.Y.Z`). Add it with `go get github.com/jsolana/agent-evaluator/backend@v0.2.0` (custom criteria need v0.2.0 or later; agents alone work from v0.1.0). To develop against a local checkout instead, point your module at it, then resolve the dependencies offline if needed:
 
 ```bash
 go mod edit -require=github.com/jsolana/agent-evaluator/backend@v0.0.0 \
@@ -304,7 +304,36 @@ go mod tidy
 AGENT=myagent go run .
 ```
 
-Copy `backend/.env.example` as `.env` next to your `main.go`, with `AGENT=myagent` and your adapter's variables; the evaluator loads it from the working directory. To go back to the published module, drop the `replace` and run `go get github.com/jsolana/agent-evaluator/backend@v0.1.0`. You can keep the adapter in a separate module (it only needs `agentkit`) and keep the `main` in a thin one.
+Copy `backend/.env.example` as `.env` next to your `main.go`, with `AGENT=myagent` and your adapter's variables; the evaluator loads it from the working directory. To go back to the published module, drop the `replace` and run `go get github.com/jsolana/agent-evaluator/backend@v0.2.0`. You can keep the adapter in a separate module (it only needs `agentkit`) and keep the `main` in a thin one.
+
+## Add your own criteria
+
+Built-in criteria cover regexes, tools, sources and LLM rubrics. For anything else (no personal data in the answer, a latency budget, a house style) register your own: a type declared in the suite like any other (`- {type: max_words, limit: 80}`), with no change to the core. The contract is [`backend/criterionkit`](backend/criterionkit) (standard library plus `agentkit`).
+
+```go
+func init() { criterionkit.Register("max_words", factory) }
+
+// The factory validates the params when a suite is imported; errors carry their path.
+func factory(params json.RawMessage) (criterionkit.Criterion, error) {
+    var p struct{ Limit int `json:"limit"` }
+    if err := criterionkit.DecodeParams(params, &p); err != nil { return nil, err } // rejects unknown fields
+    if p.Limit <= 0 { return nil, errors.New("limit must be positive") }
+    return maxWords{p.Limit}, nil
+}
+
+func (c maxWords) Evaluate(_ context.Context, in criterionkit.Input) (criterionkit.Result, error) {
+    n := len(strings.Fields(in.Answer))
+    return criterionkit.Result{Passed: n <= c.limit, Explanation: fmt.Sprintf("%d words (limit %d)", n, c.limit)}, nil
+}
+```
+
+- **Input:** `History`, `Question`, `Answer`, `Spans` (the turn's trace), `DurationMs` and `Tokens` of the agent's answer.
+- **Result:** `Passed`, `Explanation` (always shown in the report), optional `Score`, `Evidence` and `Tokens`. Set `Version` and bump it when the logic changes, so comparisons can tell.
+- **Errors:** return an `error` only when the turn could not be evaluated (a dependency is down); that criterion is reported as an execution error. A turn that was evaluated and does not comply is `Passed: false`. A panic is contained and reported the same way.
+- **Wiring:** import your package for its side effect in your own `main`, next to `evaluator.Main()`, exactly as for an agent adapter. A name that collides with a built-in criterion stops the start-up. Prefix yours (`myorg.no_pii`) to avoid clashes between packages.
+- **Testing:** `criteriontest.Run` and `criteriontest.Invalid` check verdicts and parameter validation in a few lines. Two working examples (`max_words`, `latency_under`) are in [`examples/criteria`](backend/examples/criteria/criteria.go); try them with `AGENT=fake go run ./cmd/examples`.
+
+The report and the UI need no change: unknown types are shown with their name and parameters.
 
 ## Using the interface
 
@@ -341,12 +370,13 @@ View state (filters, open turn, base run, tab) lives in the URL, so any view can
 ```
 backend/
   agentkit/      PUBLIC contract (stdlib only): Agent, Conversation, TraceSource, Span, Registry; agenttest: conformance suite
+  criterionkit/  PUBLIC contract for custom criteria: Criterion, Factory, Register; criteriontest: test helpers
   evaluator/     PUBLIC composition root: Main / Run wire the chosen agent with store, runner, judge and API
   adapters/      bundled adapters, each a package that registers itself: httpagent (YAML-driven REST), fake, hiringlab
-  examples/      echo and httpchat (Go adapters, templates for your own) · httpagent (YAML for the same agent)
+  examples/      echo and httpchat (Go adapters), httpagent (YAML for the same agent), criteria (custom criteria)
   cmd/server     ready-made program: evaluator + httpagent + fake adapters
   cmd/hiringlab  program with the Hiring Lab adapter · cmd/hiringlab-convert: its legacy format → suite
-  cmd/examples   program with the example adapters (echo, httpchat)
+  cmd/examples   program with the example adapters and criteria
   arch/          architecture tests (dependency rules)
   internal/
     domain       entities and verdict rules
@@ -395,7 +425,7 @@ scenarios/       agent-agnostic example suites
 
 ## Roadmap
 
-- Custom criteria registered from an adapter's module (today criteria are built in).
+- Custom criteria that can use the configured LLM judge, and declarative criteria (`contains`, `max_length`...) written in YAML only.
 - Users and authorization (today a single-user local tool; annotation authors are free text).
 - A real broker, multiple instances and a database other than SQLite.
 - Cancelling or retrying a single scenario, repetitions with variance, re-judging stored transcripts without re-running the agent.

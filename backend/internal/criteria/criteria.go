@@ -21,6 +21,9 @@ type Input struct {
 	Question string
 	Answer   string
 	Spans    []domain.Span
+
+	DurationMs int64 // time the agent took to answer
+	Tokens     int   // tokens the agent reported for the turn
 }
 
 type Criterion interface {

@@ -371,7 +371,7 @@ func (r *Runner) evaluateTurn(ctx context.Context, evaluationID int64, tr domain
 	}
 	_ = r.store.SaveSpans(ctx, tr.ID, spans)
 
-	in := criteria.Input{History: history, Question: turn.Question, Answer: out.Text, Spans: spans}
+	in := criteria.Input{History: history, Question: turn.Question, Answer: out.Text, Spans: spans, DurationMs: out.DurationMs, Tokens: out.Tokens}
 	results := make([]domain.CriterionResult, 0, len(turn.Criteria))
 	for _, c := range turn.Criteria {
 		results = append(results, r.evaluateCriterion(ctx, c, in))

@@ -52,6 +52,19 @@ func TestAgentkitDependsOnlyOnTheStandardLibrary(t *testing.T) {
 	}
 }
 
+// criterionkit is the public contract for custom criteria: standard library and
+// agentkit only.
+func TestCriterionkitDependsOnlyOnTheStandardLibraryAndAgentkit(t *testing.T) {
+	for pkg, deps := range imports(t, module+"/criterionkit/...") {
+		for _, d := range deps {
+			external := strings.Contains(strings.SplitN(d, "/", 2)[0], ".")
+			if external && !strings.HasPrefix(d, module+"/criterionkit") && !strings.HasPrefix(d, module+"/agentkit") {
+				t.Errorf("%s imports %s: criterionkit may only use the standard library and agentkit", pkg, d)
+			}
+		}
+	}
+}
+
 // Adapters are written by third parties, so the bundled ones must be buildable
 // from the public contract alone.
 func TestAdaptersUseOnlyThePublicContract(t *testing.T) {
