@@ -295,7 +295,7 @@ mkdir myagent    # your adapter package: imports agentkit, registers itself
 # main.go: blank-import example.com/me/myeval/myagent and call evaluator.Main()
 ```
 
-The evaluator is the Go module `github.com/jsolana/agent-evaluator/backend` (its `go.mod` lives in `backend/`, so release tags must be named `backend/vX.Y.Z`). While you develop, point your module at a local checkout, then resolve the dependencies offline if needed:
+The evaluator is the Go module `github.com/jsolana/agent-evaluator/backend` (its `go.mod` lives in `backend/`, so release tags are named `backend/vX.Y.Z`; the first is `backend/v0.1.0`). Add it with `go get github.com/jsolana/agent-evaluator/backend@v0.1.0`. To develop against a local checkout instead, point your module at it, then resolve the dependencies offline if needed:
 
 ```bash
 go mod edit -require=github.com/jsolana/agent-evaluator/backend@v0.0.0 \
@@ -304,7 +304,7 @@ go mod tidy
 AGENT=myagent go run .
 ```
 
-Copy `backend/.env.example` as `.env` next to your `main.go`, with `AGENT=myagent` and your adapter's variables; the evaluator loads it from the working directory. When the evaluator is tagged, replace the `replace` with `go get github.com/jsolana/agent-evaluator/backend@<version>`. You can keep the adapter in a separate module (it only needs `agentkit`) and keep the `main` in a thin one.
+Copy `backend/.env.example` as `.env` next to your `main.go`, with `AGENT=myagent` and your adapter's variables; the evaluator loads it from the working directory. To go back to the published module, drop the `replace` and run `go get github.com/jsolana/agent-evaluator/backend@v0.1.0`. You can keep the adapter in a separate module (it only needs `agentkit`) and keep the `main` in a thin one.
 
 ## Using the interface
 
@@ -395,8 +395,12 @@ scenarios/       agent-agnostic example suites
 
 ## Roadmap
 
-- Custom criteria registered from an adapter's module (today criteria are built in), and a tagged release of the Go module so adapters can `go get` it.
+- Custom criteria registered from an adapter's module (today criteria are built in).
 - Users and authorization (today a single-user local tool; annotation authors are free text).
 - A real broker, multiple instances and a database other than SQLite.
 - Cancelling or retrying a single scenario, repetitions with variance, re-judging stored transcripts without re-running the agent.
 - Overriding a verdict from an annotation, or generating a new suite version from annotations.
+
+## License
+
+[MIT](LICENSE): free to use, modify and distribute.
