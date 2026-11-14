@@ -33,7 +33,7 @@ scenarios:
     tags: [mortgage]
     metadata: {channel: web}
     turns:
-      - question: "¿MiVivienda o tradicional?"
+      - question: "¿HomeLoan o tradicional?"
         criteria:
           - type: llm_judge
             expected: "Describe ambos"

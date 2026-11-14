@@ -46,15 +46,15 @@ func messagesServer(t *testing.T, got *captured, status []int, verdict string) *
 func request() criteria.JudgeRequest {
 	return criteria.JudgeRequest{
 		Kind:      "llm_judge",
-		History:   []criteria.Exchange{{Question: "¿Qué es Yape?", Answer: "Una billetera digital."}},
+		History:   []criteria.Exchange{{Question: "¿Qué es Wallet?", Answer: "Una billetera digital."}},
 		Question:  "¿Y su límite diario?",
-		Answer:    "El límite es S/ 2,000.",
-		Expected:  "Indica el límite diario de Yape",
-		Documents: []domain.Document{{Rank: 1, Title: "Yape", URL: "https://www.viabcp.com/yape", Content: "Límite diario S/ 2,000"}},
+		Answer:    "El límite es USD 2,000.",
+		Expected:  "Indica el límite diario de Wallet",
+		Documents: []domain.Document{{Rank: 1, Title: "Wallet", URL: "https://www.example.com/yape", Content: "Límite diario USD 2,000"}},
 	}
 }
 
-const okVerdict = `{"passed":true,"score":0.9,"explanation":"Cumple","evidence":["El límite es S/ 2,000."]}`
+const okVerdict = `{"passed":true,"score":0.9,"explanation":"Cumple","evidence":["El límite es USD 2,000."]}`
 
 func TestJudgeSendsStructuredRequestAndParsesVerdict(t *testing.T) {
 	var got captured
@@ -78,7 +78,7 @@ func TestJudgeSendsStructuredRequestAndParsesVerdict(t *testing.T) {
 		t.Fatalf("request must use structured outputs: %v", got.body)
 	}
 	user := userContent(t, got.body)
-	for _, want := range []string{"¿Qué es Yape?", "¿Y su límite diario?", "El límite es S/ 2,000.", "Indica el límite diario", "https://www.viabcp.com/yape"} {
+	for _, want := range []string{"¿Qué es Wallet?", "¿Y su límite diario?", "El límite es USD 2,000.", "Indica el límite diario", "https://www.example.com/yape"} {
 		if !strings.Contains(user, want) {
 			t.Fatalf("user content lacks %q", want)
 		}

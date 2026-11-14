@@ -231,7 +231,7 @@ View state (filters, open turn, base run, tab) lives in the URL, so any view can
 ```
 backend/
   cmd/server     wiring: the only place with concrete implementations (agents.go: agent registry)
-  cmd/convert    optional tool: legacy scenarios format → suite format
+  agent/hiringlab/cmd/convert  Hiring Lab only: legacy scenarios format → suite format
   internal/
     domain       entities and verdict rules
     suite        YAML parsing and validation

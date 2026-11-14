@@ -11,4 +11,6 @@ Suggested `JUDGE_AGENT_DESCRIPTION`: `a banking assistant`.
 
 The agent keeps the conversation by id, deduplicates turns by `Idempotency-Key` and returns its trace inline. Its tools are `ragSearch` and `ragGetSourceChunks`.
 
+Tool `cmd/convert` turns the legacy scenarios format of the original Hiring Lab scripts into a suite: `go run ./internal/agent/hiringlab/cmd/convert < old.yaml > suite.yaml`.
+
 An example suite for this agent is in [`examples/multiturn.suite.yaml`](examples/multiturn.suite.yaml).

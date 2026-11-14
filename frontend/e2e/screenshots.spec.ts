@@ -12,10 +12,10 @@ scenarios:
     name: "mortgage | individual_client | complex | multi_turn_follow_up"
     tags: [mortgage]
     turns:
-      - question: "¿Qué requisitos tiene el crédito MiVivienda?"
+      - question: "¿Qué requisitos tiene el crédito HomeLoan?"
         criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [search]}, {type: llm_judge, expected: "Lista los requisitos"}]
       - question: "¿Y cuánto sería la cuota mensual?"
-        criteria: [{type: regex, pattern: "${turn2}"}, {type: context_retention, expected: "Sigue hablando de MiVivienda"}]
+        criteria: [{type: regex, pattern: "${turn2}"}, {type: context_retention, expected: "Sigue hablando de HomeLoan"}]
       - question: "Resume lo anterior en una lista"
         criteria: [{type: regex, pattern: "answer 3"}]
   - key: pos-ferreteria
@@ -34,7 +34,7 @@ scenarios:
   const v1 = await (await request.post("/api/suites", { data: yaml("answer 9") })).json();
   const e1 = await (await request.post("/api/evaluations", { data: { suiteId: v1.id, label: "baseline", concurrency: 3 } })).json();
   await expect.poll(async () => (await (await request.get(`/api/evaluations/${e1.id}`)).json()).evaluation.status, { timeout: 30000 }).toBe("completed");
-  await request.post(`/api/evaluations/${e1.id}/scenarios/mivivienda/turns/2/annotations`, { data: { author: "javi", body: "El corpus dice S/ 1,500: la rúbrica es demasiado estricta", tags: ["rubric_too_strict"] } });
+  await request.post(`/api/evaluations/${e1.id}/scenarios/mivivienda/turns/2/annotations`, { data: { author: "javi", body: "El corpus dice USD 1,500: la rúbrica es demasiado estricta", tags: ["rubric_too_strict"] } });
   await request.post(`/api/evaluations/${e1.id}/scenarios/mivivienda/turns/2/analysis`);
   const v2 = await (await request.post("/api/suites", { data: yaml("answer 2") })).json();
   const e2 = await (await request.post("/api/evaluations", { data: { suiteId: v2.id, label: "rubric fix", concurrency: 3 } })).json();

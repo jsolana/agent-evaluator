@@ -46,7 +46,7 @@ func startServer() (*httptest.Server, func(), error) {
 	reg := criteria.NewRegistry(noJudge{})
 	ag := fake.New(func(ref string, h []string, in agent.TurnInput) (string, []domain.Span, error) {
 		if strings.Contains(in.Message, "cuota") {
-			return "La cuota sería de S/ 1,500 al mes", []domain.Span{{Kind: "tool", Name: "search", DurationMs: 120}, {Kind: "tool", Name: "getSource", DurationMs: 180}}, nil
+			return "La cuota sería de USD 1,500 al mes", []domain.Span{{Kind: "tool", Name: "search", DurationMs: 120}, {Kind: "tool", Name: "getSource", DurationMs: 180}}, nil
 		}
 		return fake.Echo(ref, h, in)
 	})
@@ -102,10 +102,10 @@ scenarios:
   - key: mortgage
     name: "mortgage | follow-up"
     turns:
-      - question: "¿Qué es el crédito MiVivienda?"
+      - question: "¿Qué es el crédito HomeLoan?"
         criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [search]}]
       - question: "¿Y cuánto sería la cuota?"
-        criteria: [{type: regex, pattern: "S/ 1,200"}]
+        criteria: [{type: regex, pattern: "USD 1,200"}]
       - question: "Resume lo anterior"
         criteria: [{type: regex, pattern: "answer 3"}]
   - key: stable

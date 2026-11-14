@@ -5,7 +5,7 @@ Feature: Multi-turn evaluation lifecycle
 
   The agent is a deterministic fake: it echoes "answer <n>: <question>" with a
   search call, except for questions about the "cuota", where it answers
-  "La cuota sería de S/ 1,500 al mes" calling search and getSource.
+  "La cuota sería de USD 1,500 al mes" calling search and getSource.
 
   Background:
     Given the evaluator is running with a fake agent
@@ -17,7 +17,7 @@ Feature: Multi-turn evaluation lifecycle
       scenarios:
         - key: only-one-turn
           turns:
-            - question: "¿Qué es el crédito MiVivienda?"
+            - question: "¿Qué es el crédito HomeLoan?"
               criteria: [{type: llm_jugde, expected: "x"}]
       """
     Then the import is rejected with the errors:
@@ -34,10 +34,10 @@ Feature: Multi-turn evaluation lifecycle
         - key: mortgage
           name: "mortgage | follow-up"
           turns:
-            - question: "¿Qué es el crédito MiVivienda?"
+            - question: "¿Qué es el crédito HomeLoan?"
               criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [search]}]
             - question: "¿Y cuánto sería la cuota?"
-              criteria: [{type: regex, pattern: "S/ 1,200"}]
+              criteria: [{type: regex, pattern: "USD 1,200"}]
             - question: "Resume lo anterior"
               criteria: [{type: regex, pattern: "answer 3"}]
         - key: stable
@@ -60,10 +60,10 @@ Feature: Multi-turn evaluation lifecycle
     And in "baseline" scenario "mortgage" fails first at turn 2
     And in "baseline" the turns of scenario "mortgage" are:
       | turn | passed | answer                            | tools                         |
-      | 1    | yes    | answer 1: ¿Qué es el crédito MiVivienda? | search               |
-      | 2    | no     | La cuota sería de S/ 1,500 al mes | search, getSource |
+      | 1    | yes    | answer 1: ¿Qué es el crédito HomeLoan? | search               |
+      | 2    | no     | La cuota sería de USD 1,500 al mes | search, getSource |
       | 3    | yes    | answer 3: Resume lo anterior      | search                     |
-    And in "baseline" turn 2 of "mortgage" fails criterion "regex" explaining "pattern not found: S/ 1,200"
+    And in "baseline" turn 2 of "mortgage" fails criterion "regex" explaining "pattern not found: USD 1,200"
     And in "baseline" the trace of scenario "mortgage" is:
       | turn | calls                         | tool ms | turn ms |
       | 1    | search                     | 120     | 0       |
@@ -73,7 +73,7 @@ Feature: Multi-turn evaluation lifecycle
     # Annotate the failure
     When I annotate turn 2 of "mortgage" in "baseline" as "rubric_too_strict":
       """
-      El corpus dice S/ 1,500: la rúbrica es incorrecta
+      El corpus dice USD 1,500: la rúbrica es incorrecta
       """
     Then turn 2 of "mortgage" in "baseline" has 1 annotation tagged "rubric_too_strict"
 
@@ -83,7 +83,7 @@ Feature: Multi-turn evaluation lifecycle
     And turn 2 of "mortgage" in "baseline" shows that latest analysis
 
     # Fix the rubric in a new version and re-run
-    When I create a new version of "Hipotecas" replacing "S/ 1,200" with "S/ 1,500"
+    When I create a new version of "Hipotecas" replacing "USD 1,200" with "USD 1,500"
     Then suite "Hipotecas" version 2 is created with 2 scenarios
     When I evaluate the latest version of "Hipotecas" as "rubric fix"
     Then evaluation "rubric fix" completes with 2 passed and 0 failed scenarios

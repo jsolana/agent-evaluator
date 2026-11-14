@@ -6,8 +6,8 @@ import type { Analysis } from "../../api/types";
 import { AnalysisPanel } from "./Analysis";
 
 const verdict: Analysis = {
-  id: 1, model: "fake/analysis-v1", verdict: "false_positive", confidence: 0.8, rationale: "La rúbrica exige S/ 1,200",
-  rootCause: "rubric", recommendation: "Aceptar S/ 1,500", tokens: 10, createdAt: "2026-11-14T10:00:00Z",
+  id: 1, model: "fake/analysis-v1", verdict: "false_positive", confidence: 0.8, rationale: "La rúbrica exige USD 1,200",
+  rootCause: "rubric", recommendation: "Aceptar USD 1,500", tokens: 10, createdAt: "2026-11-14T10:00:00Z",
 };
 
 function setup() {
@@ -31,7 +31,7 @@ test("Analyze shows a contradicting verdict as something to review and can save 
   const client = setup();
   fireEvent.click(screen.getByRole("button", { name: /Analizar/ }));
   expect(await screen.findByText(/Posible falso positivo — revisar/)).toBeInTheDocument();
-  expect(screen.getByText("La rúbrica exige S/ 1,200")).toBeInTheDocument();
+  expect(screen.getByText("La rúbrica exige USD 1,200")).toBeInTheDocument();
   expect(client.analyzeTurn).toHaveBeenCalledWith(7, "mortgage", 2);
 
   fireEvent.click(screen.getByRole("button", { name: "Guardar como anotación" }));

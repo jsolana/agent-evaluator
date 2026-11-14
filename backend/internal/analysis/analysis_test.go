@@ -26,7 +26,7 @@ func (f *fakeStore) GetEvaluation(context.Context, int64) (store.EvaluationSumma
 func (f *fakeStore) GetSuite(context.Context, int64) (domain.Suite, error) {
 	return domain.Suite{Scenarios: []domain.Scenario{{ID: 1, Key: "s", Turns: []domain.Turn{
 		{ID: 1, Index: 1, Question: "q1", Criteria: []domain.Criterion{{ID: 1, Type: "regex", Params: json.RawMessage(`{"pattern":"a"}`)}}},
-		{ID: 2, Index: 2, Question: "q2", Criteria: []domain.Criterion{{ID: 2, Type: "regex", Params: json.RawMessage(`{"pattern":"S/ 1,200"}`)}}},
+		{ID: 2, Index: 2, Question: "q2", Criteria: []domain.Criterion{{ID: 2, Type: "regex", Params: json.RawMessage(`{"pattern":"USD 1,200"}`)}}},
 		{ID: 3, Index: 3, Question: "q3", Criteria: []domain.Criterion{{ID: 3, Type: "regex", Params: json.RawMessage(`{"pattern":"c"}`)}}},
 	}}}}, nil
 }
@@ -36,14 +36,14 @@ func (f *fakeStore) ListScenarioResults(context.Context, int64) ([]domain.Scenar
 func (f *fakeStore) TurnResultsByEvaluation(context.Context, int64) (map[int64][]domain.TurnResult, error) {
 	return map[int64][]domain.TurnResult{1: {
 		{ID: 10, Index: 1, Status: domain.TurnCompleted, Passed: true, ResponseText: "a1"},
-		{ID: 20, Index: 2, Status: domain.TurnCompleted, Passed: false, ResponseText: "S/ 1,500"},
+		{ID: 20, Index: 2, Status: domain.TurnCompleted, Passed: false, ResponseText: "USD 1,500"},
 	}}, nil
 }
 func (f *fakeStore) SpansByEvaluation(context.Context, int64) (map[int64][]domain.Span, error) {
 	return nil, nil
 }
 func (f *fakeStore) CriterionResultsByEvaluation(context.Context, int64) (map[int64][]domain.CriterionResult, error) {
-	return map[int64][]domain.CriterionResult{20: {{CriterionID: 2, CriterionType: "regex", Passed: false, Explanation: "pattern not found: S/ 1,200"}}}, nil
+	return map[int64][]domain.CriterionResult{20: {{CriterionID: 2, CriterionType: "regex", Passed: false, Explanation: "pattern not found: USD 1,200"}}}, nil
 }
 func (f *fakeStore) AnnotationsByEvaluation(context.Context, int64) (map[int64][]domain.Annotation, error) {
 	return map[int64][]domain.Annotation{20: {{Body: "el corpus dice 1,500", Tags: []string{"rubric_too_strict"}}}}, nil
@@ -53,7 +53,7 @@ func (f *fakeStore) LatestAnalysesByEvaluation(context.Context, int64) (map[int6
 }
 func (f *fakeStore) ListSpans(_ context.Context, id int64) ([]domain.Span, error) {
 	return []domain.Span{{Kind: "tool", Name: "search", DurationMs: 50, Attributes: json.RawMessage(`{"arguments":{"query":"cuota"}}`),
-		Documents: []domain.Document{{Rank: 1, URL: "https://bcp/x"}}}}, nil
+		Documents: []domain.Document{{Rank: 1, URL: "https://acme.example/x"}}}}, nil
 }
 func (f *fakeStore) AddAnalysis(_ context.Context, id int64, a domain.Analysis) (domain.Analysis, error) {
 	f.mu.Lock()
@@ -90,10 +90,10 @@ func TestAnalyzeTurnSendsFullContextAndStoresTheResult(t *testing.T) {
 		t.Fatalf("analysis not stored: %+v %+v", a, st.saved)
 	}
 	r := an.got[0]
-	if r.Question != "q2" || r.Answer != "S/ 1,500" || r.TurnPassed || len(r.History) != 1 || r.History[0].Answer != "a1" {
+	if r.Question != "q2" || r.Answer != "USD 1,500" || r.TurnPassed || len(r.History) != 1 || r.History[0].Answer != "a1" {
 		t.Fatalf("conversation context: %+v", r)
 	}
-	if len(r.Criteria) != 1 || string(r.Criteria[0].Params) != `{"pattern":"S/ 1,200"}` || r.Criteria[0].Explanation == "" {
+	if len(r.Criteria) != 1 || string(r.Criteria[0].Params) != `{"pattern":"USD 1,200"}` || r.Criteria[0].Explanation == "" {
 		t.Fatalf("rubric and results: %+v", r.Criteria)
 	}
 	if len(r.Tools) != 1 || r.Tools[0].Name != "search" || len(r.Documents) != 1 || len(r.Annotations) != 1 {
