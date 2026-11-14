@@ -427,8 +427,24 @@ scenarios/       agent-agnostic example suites
 
 ## Roadmap
 
+State after the first iteration (`backend/v0.2.0`, with CI). Nothing below is committed to a date.
+
+**Validation**
+- Run `httpagent`, the `traces` section, `examples/httpchat` and custom criteria against **real agents**. So far they are covered by tests with simulated servers and throw-away modules, so real-world response formats, authentication schemes and rate limits may surface cases not yet handled.
+
+**Extending**
+- `httpagent`: streaming responses (SSE), authentication with token refresh and several calls per turn. Today those need an adapter written in Go.
 - Custom criteria that can use the configured LLM judge, and declarative criteria (`contains`, `max_length`...) written in YAML only.
-- Users and authorization (today a single-user local tool; annotation authors are free text).
+
+**Security**
+- Authentication for the API. It is a single-user local tool and has none: do not expose it on a network, because anyone who reaches it can start evaluations that spend the agent's and the judge's quota. A simple token would be the first step; full users and authorization (annotation authors are free text today) come after.
+- Pin the GitHub Actions in `.github/workflows/ci.yml` to commit hashes instead of major versions.
+
+**Project**
+- `CHANGELOG` and `CONTRIBUTING`, and runnable `Example*` functions in `agentkit` and `criterionkit` so they show in pkg.go.dev.
+- Move `go.mod` to the repository root before v1.0, so releases are tagged `vX.Y.Z` instead of `backend/vX.Y.Z`. It is a restructure of import paths, so it is cheaper to do early.
+
+**Platform**
 - A real broker, multiple instances and a database other than SQLite.
 - Cancelling or retrying a single scenario, repetitions with variance, re-judging stored transcripts without re-running the agent.
 - Overriding a verdict from an annotation, or generating a new suite version from annotations.
