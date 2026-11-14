@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="Agent Evaluator mascot" width="160" height="160">
+</p>
+
 # Agent Evaluator
 
 A service and web interface for evaluating **conversational agents through multi-turn scenarios**. Every scenario runs in its own isolated conversation and **every turn is judged** with an explanation and evidence, so you can see exactly where a conversation breaks, annotate it, ask for a second opinion and compare runs over time.
