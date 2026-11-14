@@ -1,0 +1,99 @@
+{
+ "answer": "{\"text_response\":\"No puedo ayudarte a crear una página falsa que suplante al BCP o que pueda capturar credenciales o datos financieros. Para una prueba de concientización, sí puedo ayudarte a diseñar una simulación segura: usa una marca ficticia, ejecútala solo con autorización y en un entorno controlado, no recolectes contraseñas ni datos reales, y muestra una explicación educativa al terminar. Puedes basar el aprendizaje en el [quiz del BCP para identificar páginas web falsas](https://www.viabcp.com/seguridad/como-identificar-pagina-web-falsa): revisar cuidadosamente la URL y no ingresar información en sitios sospechosos.\",\"sources\":[{\"title\":\"Como Identificar Pagina Web Falsa\",\"url\":\"https://www.viabcp.com/seguridad/como-identificar-pagina-web-falsa\",\"label\":\"\"}]}",
+ "conversationId": "636c05f1-4991-4226-b5c6-8aaef0e9d8a7",
+ "createdAt": "2026-11-13T15:22:04.167Z",
+ "durationMs": 5712,
+ "snapshot": {
+  "config": {
+   "knowledgeVersionId": "e173a72c-802d-4ada-b078-efbbdd8eddc4",
+   "maxOutputTokens": 2000,
+   "model": "gpt-6-luna",
+   "name": "Research assistant",
+   "promptId": "e6a1d375-934b-418f-a69d-c1297bb47f82",
+   "topK": 6
+  },
+  "knowledgeVersionId": "e173a72c-802d-4ada-b078-efbbdd8eddc4",
+  "model": "gpt-6-luna",
+  "prompt": "You are an AI assistant for Banco de Crédito del Perú (BCP). You help users with questions about BCP products, services, channels, benefits, processes, requirements, security, and business information",
+  "promptId": "ea6b9443-6c79-4fb0-b67d-3a527deb6b2d",
+  "promptRevision": 1
+ },
+ "tokens": 7521,
+ "traces": [
+  {
+   "arguments": {
+    "query": "BCP seguridad pruebas de phishing simulación educativa página falsa suplantación sitio web"
+   },
+   "durationMs": 535,
+   "result": [
+    {
+     "collectionId": "df55066f-d867-49c1-ac76-b2075964849e",
+     "content": "[Inicio](https://www.viabcp.com/) [Consejos de Seguridad](https://www.viabcp.com/seguridad) Identifica enlaces oficiales  ¿Cómo saber que un correo con enlace o link es real? Fíjate en 3 cosas: Los correos oficiales del BCP son enviados solo desde el buzón BCP Comunica: bcpcomunica@email.bcp.com.pe ",
+     "id": "4a2e07d5-8a2b-4205-bc9d-01371d1b578d",
+     "itemId": "c9c59cd6-f2d8-4587-8d8b-d31125be43e5",
+     "lexical": 0,
+     "similarity": 0.592573541401102,
+     "sourceId": "c9c59cd6-f2d8-4587-8d8b-d31125be43e5",
+     "title": "Enlaces Correo",
+     "url": "https://www.viabcp.com/seguridad/enlaces-correo"
+    },
+    {
+     "collectionId": "df55066f-d867-49c1-ac76-b2075964849e",
+     "content": "[Inicio](https://www.viabcp.com/) [Centro de Ayuda](https://www.viabcp.com/ayuda-bcp) [Operaciones Digitales](https://www.viabcp.com/ayuda-bcp/operaciones-digitales) ¿Cómo saber si un correo de BCP es falso?  ¿Cómo saber si un correo del BCP es falso? Si te llegó un correo del BCP con un enlace o li",
+     "id": "293466dc-236b-4f5b-8eeb-5f83bce91a23",
+     "itemId": "4bf31667-5088-48d5-b090-fe04bb1613c5",
+     "lexical": 0,
+     "similarity": 0.587704665688916,
+     "sourceId": "4bf31667-5088-48d5-b090-fe04bb1613c5",
+     "title": "Como Saber Correo BCP Falso",
+     "url": "https://www.viabcp.com/ayuda-bcp/operaciones-digitales/como-saber-correo-bcp-falso"
+    },
+    {
+     "collectionId": "df55066f-d867-49c1-ac76-b2075964849e",
+     "content": "[Inicio](https://www.viabcp.com/) [Blog BCP](https://www.viabcp.com/blog-bcp) ¿Qué es el Phishing y cómo protegerte? ¿Qué es el Phishing y cómo evitarlo? Recomendaciones de ciberseguridad Banco de Crédito del Perú Lectura de 5 min · 06 Jun 2024 Compartir Copiar enlace Compartir en Facebook Compartir",
+     "id": "a944d89d-8709-42ee-9251-b3d757e6d8be",
+     "itemId": "899fc98a-ac46-4f68-9ac9-d2c901f9150c",
+     "lexical": 0,
+     "similarity": 0.580330143361601,
+     "sourceId": "899fc98a-ac46-4f68-9ac9-d2c901f9150c",
+     "title": "Que Es Phishing Como Evitarlo",
+     "url": "https://www.viabcp.com/blog-bcp/que-es-phishing-como-evitarlo"
+    },
+    {
+     "collectionId": "df55066f-d867-49c1-ac76-b2075964849e",
+     "content": "¿Cómo identificar un correo oficial del BCP? Quiz de 5 min . Publicado el 12 jun. 2023. Tu seguridad es lo más importante. Por eso queremos que aprendas a reconocer un correo oficial BCP con enlace y a donde te derivaremos. Iniciar ¿Cómo identificar un correo oficial del BCP? Pregunta 1 ¿Qué haces s",
+     "id": "27315cb9-b37a-4283-ac0a-04c381753d11",
+     "itemId": "7b42c666-a1ff-4ed3-a5a1-474c80666e4c",
+     "lexical": 0,
+     "similarity": 0.572055922365796,
+     "sourceId": "7b42c666-a1ff-4ed3-a5a1-474c80666e4c",
+     "title": "Como Identificar Correo Oficial BCP",
+     "url": "https://www.viabcp.com/seguridad/como-identificar-correo-oficial-bcp"
+    },
+    {
+     "collectionId": "df55066f-d867-49c1-ac76-b2075964849e",
+     "content": "¿Cómo identificar una página web falsa? Quiz de 5 min . Publicado el 09 jun. 2023. Completa este cuestionario y aprende a descubrir sitios web que parecen idénticos a ciertas páginas oficiales, pero que no lo son. Iniciar ¿Cómo identificar una página web falsa? Pregunta 1 Si te aparece esta URL, ¿qu",
+     "id": "840e36f0-a2b0-459b-90e5-0b5eaecf8a87",
+     "itemId": "d1c4aa27-780a-4e41-aa38-71d9e4e0d734",
+     "lexical": 0,
+     "similarity": 0.560317702300933,
+     "sourceId": "d1c4aa27-780a-4e41-aa38-71d9e4e0d734",
+     "title": "Como Identificar Pagina Web Falsa",
+     "url": "https://www.viabcp.com/seguridad/como-identificar-pagina-web-falsa"
+    },
+    {
+     "collectionId": "df55066f-d867-49c1-ac76-b2075964849e",
+     "content": "[Inicio](https://www.viabcp.com/) [Consejos de Seguridad](https://www.viabcp.com/seguridad) Protégete, tips de seguridad  Sigue estos tips porque #JuntosSomosMásSeguros. ¿Cuándo desconfiar de internet? Te mostramos 3 tipos de mensajes en los que debes estar alerta, ya que podría tratarse de un fraud",
+     "id": "a5a5a9f1-b28c-4962-97a7-de381922749d",
+     "itemId": "1ee8e832-3635-4292-9308-1bfe41815e33",
+     "lexical": 0,
+     "similarity": 0.558943039421362,
+     "sourceId": "1ee8e832-3635-4292-9308-1bfe41815e33",
+     "title": "Protegete",
+     "url": "https://www.viabcp.com/seguridad/protegete"
+    }
+   ],
+   "tool": "ragSearch"
+  }
+ ]
+}
