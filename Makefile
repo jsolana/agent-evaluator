@@ -7,7 +7,7 @@ BACKEND_CMD ?= ./cmd/server
 FRONTEND := frontend
 
 .PHONY: help install \
-        test test-backend test-frontend test-e2e \
+        test test-backend test-frontend test-e2e test-public-api \
         build build-backend build-frontend \
         run run-backend run-frontend run-fake \
         clean clean-backend clean-frontend
@@ -30,6 +30,9 @@ test-frontend: ## Frontend: lint and unit tests
 
 test-e2e: ## Frontend: Playwright journey (starts its own backend with fakes)
 	cd $(FRONTEND) && npx playwright install chromium && npm run test:e2e
+
+test-public-api: ## A throw-away module outside this one builds an agent and a criterion from the public API
+	./scripts/external-module-check.sh
 
 # --- Build -------------------------------------------------------------------
 

@@ -407,8 +407,10 @@ scenarios/       agent-agnostic example suites
 | Everything | `make test` |
 | Backend | `cd backend && go test -race ./...` · `go test -v -run TestFeatures ./internal/api/` for readable acceptance output |
 | Frontend | `npm test` (Vitest + Testing Library) · `npm run lint` · `npm run build` · `npm run audit` |
+| Public API | `make test-public-api` builds an agent and a custom criterion in a throw-away module outside this one, using only the public packages |
 | End to end | `npm run test:e2e` (Playwright) starts the backend with fakes and a fresh database, then walks the full journey. `SHOTS=<dir> npx playwright test screenshots` captures every view |
 
+- **CI**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to `master` and every pull request: formatting, `go mod tidy`, `go vet` and `go test -race` (including the architecture rules); the public-API check; frontend lint, tests and build (plus a non-blocking `npm audit`); and the Playwright journey, keeping its traces if it fails.
 - **Acceptance (godog)**: [`evaluation_lifecycle.feature`](backend/internal/api/features/evaluation_lifecycle.feature) runs against the real HTTP API with a fake agent and an in-memory store: invalid suite rejected with every error located, full cycle (import, evaluate, review, annotate, analyze, fix the rubric in a new version, re-run, compare at three levels) and batch analysis.
 - **Runner**: context and isolation, retries with the same key, 409 mid-conversation and after a lost response, resume after a crash, concurrency limits, no starvation, prompt-injection leak, and stateless non-idempotent agents.
 - **Judge**: both protocols, structured output, retries and isolation from prompt injection.
