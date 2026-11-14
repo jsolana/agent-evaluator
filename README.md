@@ -8,7 +8,7 @@ It is **agent-agnostic**: the evaluated agent, its traces, the LLM judge and the
 |---|---|
 | [`backend/`](backend/) | Go API: suites, async execution, per-turn criteria, LLM judge, analysis, comparison |
 | [`frontend/`](frontend/) | React SPA for reviewing and comparing evaluations |
-| [`scenarios/`](scenarios/multiturn.suite.yaml) | Example suite with 3- and 4-turn scenarios, including an adversarial turn |
+| [`scenarios/`](scenarios/example.suite.yaml) | Agent-agnostic example suite (runs offline with the fake agent) |
 
 ## Why
 
@@ -53,7 +53,7 @@ cd backend
 cp .env.example .env     # never commit .env
 go run ./cmd/server      # http://localhost:8080/api/health
 AGENT=fake JUDGE_PROVIDER=fake go run ./cmd/server   # no credentials, no external calls
-curl --data-binary @../scenarios/multiturn.suite.yaml localhost:8080/api/suites
+curl --data-binary @../scenarios/example.suite.yaml localhost:8080/api/suites
 ```
 
 Frontend only (needs the backend running):
@@ -139,7 +139,7 @@ scenarios:
       - question: "What is the first-home loan?"
         criteria:
           - {type: llm_judge, expected: "Describes requirements without recommending"}
-          - {type: tools_required, tools: [ragSearch]}
+          - {type: tools_required, tools: [search]}
           - {type: sources_retrieved, urls: ["https://example.com/..."], match: any}
       - question: "And the monthly payment?"
         criteria:
@@ -155,7 +155,7 @@ scenarios:
 | `llm_judge` | LLM | answer satisfies `expected`, given history and documents |
 | `context_retention` | LLM | answer uses the context from previous turns |
 
-Uploading a suite with the same name creates a new version; a run's definition is never modified. The minimum number of turns per scenario is set by the server (`SUITE_MIN_TURNS`). A complete example is in [`scenarios/multiturn.suite.yaml`](scenarios/multiturn.suite.yaml).
+Uploading a suite with the same name creates a new version; a run's definition is never modified. The minimum number of turns per scenario is set by the server (`SUITE_MIN_TURNS`). A generic example, runnable with the fake agent, is in [`scenarios/example.suite.yaml`](scenarios/example.suite.yaml); adapters may ship their own under `backend/internal/agent/<name>/examples/`.
 
 ## Configuration
 
@@ -163,16 +163,15 @@ The server loads `.env` from its working directory; real environment variables t
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
-| `AGENT` | no | `hiringlab` | Adapter registered in [`backend/cmd/server/agents.go`](backend/cmd/server/agents.go): `hiringlab` (bundled HTTP adapter) or `fake` |
-| `HIRING_LAB_BASE_URL` | with `AGENT=hiringlab` | — | Base URL of the agent's API |
-| `HIRING_LAB_PROJECT_KEY` | with `AGENT=hiringlab` | — | API key (Bearer) |
+| `AGENT` | **yes** | — | Adapter registered in [`backend/cmd/server/agents.go`](backend/cmd/server/agents.go). Bundled: `fake` (offline) and `hiringlab` ([its settings](backend/internal/agent/hiringlab/README.md)). No default: the evaluator assumes no agent |
+| Adapter variables | with that `AGENT` | — | Each adapter reads its own (URL, credentials…); documented next to the adapter |
 | `JUDGE_PROVIDER` | no | `openai-compatible` | `openai-compatible`, `anthropic` or `fake` |
 | `JUDGE_BASE_URL` | with `openai-compatible` | — | Provider URL including `/v1`; no provider is assumed |
 | `JUDGE_API_KEY` | for LLM criteria and Analyze | — | Provider key |
 | `JUDGE_MODEL` | with `anthropic` | `gpt-5.4-mini` (openai-compatible) | Model id |
 | `JUDGE_RESPONSE_FORMAT` | no | `json_schema` | openai-compatible only: `json_schema`, `json_object` or `text` |
 | `JUDGE_EFFORT` | no | `high` | anthropic only |
-| `JUDGE_AGENT_DESCRIPTION` | no | `an AI assistant` | Who is evaluated, named in the judge and Analyze prompts (e.g. `a banking assistant`) |
+| `JUDGE_AGENT_DESCRIPTION` | no | `an AI assistant` | Who is evaluated, named in the judge and Analyze prompts (e.g. `a customer support assistant`) |
 | `PORT` · `DB_PATH` | no | `8080` · `evaluator.db` | HTTP port · SQLite file |
 | `WORKERS` · `DEFAULT_CONCURRENCY` | no | `4` · `2` | Global worker pool · scenarios in flight per evaluation |
 | `SUITE_MIN_TURNS` | no | `3` | Minimum turns per scenario, enforced on import |
@@ -232,14 +231,14 @@ View state (filters, open turn, base run, tab) lives in the URL, so any view can
 ```
 backend/
   cmd/server     wiring: the only place with concrete implementations (agents.go: agent registry)
-  cmd/convert    legacy scenarios → suite format
+  cmd/convert    optional tool: legacy scenarios format → suite format
   internal/
     domain       entities and verdict rules
     suite        YAML parsing and validation
     criteria     Criterion interface, built-ins, registry
     judge        LLM judge and analyzer (OpenAI-compatible, Anthropic, fake)
-    agent        Agent interface (+ optional Idempotent), hiringlab and fake adapters
-    tracing      TraceSource interface + hiringlab and fake
+    agent        Agent interface (+ optional Idempotent), adapters (fake, hiringlab)
+    tracing      TraceSource interface + adapters
     queue        Queue interface + in-memory implementation
     runner       per-evaluation coordinator + global worker pool
     analysis     second-opinion service
@@ -251,7 +250,7 @@ frontend/
   src/domain     declarative presentation tables · formatting · word diff (pure, unit-tested)
   src/ui         presentational components with primitive props
   src/features   suites · evaluation · conversation · traces · analysis · compare
-scenarios/       example suites
+scenarios/       agent-agnostic example suites
 ```
 
 - **Backend**: Go with the standard library and minimal dependencies. Runtime: `modernc.org/sqlite` (pure Go, embedded) and `gopkg.in/yaml.v3`; tests only: `github.com/cucumber/godog`.

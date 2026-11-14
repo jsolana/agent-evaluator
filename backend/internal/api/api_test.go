@@ -14,17 +14,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/agent"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/agent/fake"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/analysis"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/criteria"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/judge"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/queue/memory"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/runner"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/store"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/suite"
-	tracefake "github.com/jsolana/hiring-lab/part-2/backend/internal/tracing/fake"
+	"github.com/jsolana/agent-evaluator/backend/internal/agent"
+	"github.com/jsolana/agent-evaluator/backend/internal/agent/fake"
+	"github.com/jsolana/agent-evaluator/backend/internal/analysis"
+	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/judge"
+	"github.com/jsolana/agent-evaluator/backend/internal/queue/memory"
+	"github.com/jsolana/agent-evaluator/backend/internal/runner"
+	"github.com/jsolana/agent-evaluator/backend/internal/store"
+	"github.com/jsolana/agent-evaluator/backend/internal/suite"
+	tracefake "github.com/jsolana/agent-evaluator/backend/internal/tracing/fake"
 )
 
 type noJudge struct{}
@@ -46,7 +46,7 @@ func startServer() (*httptest.Server, func(), error) {
 	reg := criteria.NewRegistry(noJudge{})
 	ag := fake.New(func(ref string, h []string, in agent.TurnInput) (string, []domain.Span, error) {
 		if strings.Contains(in.Message, "cuota") {
-			return "La cuota sería de S/ 1,500 al mes", []domain.Span{{Kind: "tool", Name: "ragSearch", DurationMs: 120}, {Kind: "tool", Name: "ragGetSourceChunks", DurationMs: 180}}, nil
+			return "La cuota sería de S/ 1,500 al mes", []domain.Span{{Kind: "tool", Name: "search", DurationMs: 120}, {Kind: "tool", Name: "getSource", DurationMs: 180}}, nil
 		}
 		return fake.Echo(ref, h, in)
 	})
@@ -103,7 +103,7 @@ scenarios:
     name: "mortgage | follow-up"
     turns:
       - question: "¿Qué es el crédito MiVivienda?"
-        criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [ragSearch]}]
+        criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [search]}]
       - question: "¿Y cuánto sería la cuota?"
         criteria: [{type: regex, pattern: "S/ 1,200"}]
       - question: "Resume lo anterior"

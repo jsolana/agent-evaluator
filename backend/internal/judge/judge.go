@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/criteria"
+	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
 )
 
 const rubricVersion = "rubric-v1"
@@ -32,7 +32,7 @@ const rubricVersion = "rubric-v1"
 const DefaultAgentDescription = "an AI assistant"
 
 type Config struct {
-	AgentDescription string // who is evaluated, e.g. "a banking assistant" (default DefaultAgentDescription)
+	AgentDescription string // who is evaluated, e.g. "a customer support assistant" (default DefaultAgentDescription)
 	APIKey           string
 	BaseURL          string        // provider base URL (required for OpenAI-compatible providers)
 	Model            string        // OpenAI-compatible: defaults to a mini model; Anthropic: required

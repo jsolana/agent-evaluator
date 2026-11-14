@@ -6,7 +6,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 )
 
 // Judge grades a turn against a rubric. It is implemented by an LLM client

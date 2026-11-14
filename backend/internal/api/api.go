@@ -15,12 +15,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/analysis"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/compare"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/report"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/store"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/suite"
+	"github.com/jsolana/agent-evaluator/backend/internal/analysis"
+	"github.com/jsolana/agent-evaluator/backend/internal/compare"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/report"
+	"github.com/jsolana/agent-evaluator/backend/internal/store"
+	"github.com/jsolana/agent-evaluator/backend/internal/suite"
 )
 
 type Store interface {

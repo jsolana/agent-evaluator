@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/tracing"
+	"github.com/jsolana/agent-evaluator/backend/internal/tracing"
 )
 
 // Fixture: a real /ask response recorded from the assigned project (contents trimmed).

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 	_ "modernc.org/sqlite"
 )
 

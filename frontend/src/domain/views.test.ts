@@ -13,7 +13,7 @@ test("turnVerdict maps turn state to a single verdict vocabulary", () => {
 
 test("criteria are described declaratively, with a fallback for unknown types", () => {
   expect(criteriaView.tools_required.label).toBe("Tools requeridas");
-  expect(criterionSummary("tools_required", { tools: ["ragSearch", "ragGetSourceChunks"] })).toBe("ragSearch, ragGetSourceChunks");
+  expect(criterionSummary("tools_required", { tools: ["search", "getSource"] })).toBe("search, getSource");
   expect(criterionSummary("regex", { pattern: "utm_", negate: true })).toBe("no debe aparecer /utm_/");
   expect(criterionSummary("sources_retrieved", { urls: ["a", "b"], match: "any" })).toBe("alguna de 2 URLs");
   expect(criterionSummary("llm_judge", { expected: "Describe ambos" })).toBe("Describe ambos");

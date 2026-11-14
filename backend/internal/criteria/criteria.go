@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 )
 
 // Exchange is one previous user/agent turn of the conversation.

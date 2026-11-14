@@ -3,7 +3,7 @@ __pycache__/
 *.db
 *.db-shm
 *.db-wal
-part-2/backend/server
+backend/server
 
 # macOS
 .DS_Store

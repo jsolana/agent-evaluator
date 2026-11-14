@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/analysis"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/criteria"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/analysis"
+	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 )
 
 // DefaultOpenAICompatibleModel is a low-cost "mini" model, used when

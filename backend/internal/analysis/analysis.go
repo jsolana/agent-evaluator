@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/criteria"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/report"
+	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/report"
 )
 
 var (

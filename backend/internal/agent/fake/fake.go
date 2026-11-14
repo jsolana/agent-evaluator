@@ -1,5 +1,5 @@
 // Package fake is a deterministic in-memory agent for tests and local demos.
-// It mimics the semantics of a stateful, idempotent agent such as Hiring Lab:
+// It mimics the semantics of a stateful, idempotent agent:
 // server-side conversation history, idempotency keys and 409 on concurrent turns.
 package fake
 
@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/agent"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/agent"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 )
 
 // Reply decides the outcome of a turn. history holds the previous user
@@ -40,10 +40,10 @@ func New(r Reply) *Agent {
 	return &Agent{Reply: r, histories: map[string][]string{}, byKey: map[string]agent.TurnOutput{}, inFlight: map[string]bool{}}
 }
 
-// Echo answers "answer N: <message>" and reports one ragSearch span.
+// Echo answers "answer N: <message>" and reports one search span.
 func Echo(_ string, history []string, in agent.TurnInput) (string, []domain.Span, error) {
 	return fmt.Sprintf("answer %d: %s", len(history)+1, in.Message),
-		[]domain.Span{{Kind: "tool", Name: "ragSearch", DurationMs: 120, Status: "ok", Documents: []domain.Document{{Rank: 1, URL: "https://example.com/doc"}}}}, nil
+		[]domain.Span{{Kind: "tool", Name: "search", DurationMs: 120, Status: "ok", Documents: []domain.Document{{Rank: 1, URL: "https://example.com/doc"}}}}, nil
 }
 
 // Idempotent reports that the fake replays the saved output of a reused key.

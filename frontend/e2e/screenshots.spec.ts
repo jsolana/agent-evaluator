@@ -13,7 +13,7 @@ scenarios:
     tags: [mortgage]
     turns:
       - question: "¿Qué requisitos tiene el crédito MiVivienda?"
-        criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [ragSearch]}, {type: llm_judge, expected: "Lista los requisitos"}]
+        criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [search]}, {type: llm_judge, expected: "Lista los requisitos"}]
       - question: "¿Y cuánto sería la cuota mensual?"
         criteria: [{type: regex, pattern: "${turn2}"}, {type: context_retention, expected: "Sigue hablando de MiVivienda"}]
       - question: "Resume lo anterior en una lista"

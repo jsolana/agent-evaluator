@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/report"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/store"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/report"
+	"github.com/jsolana/agent-evaluator/backend/internal/store"
 )
 
 // fakeStore serves a fixed report: scenario "s" with turn 1 passed and turn 2 failed.
@@ -52,7 +52,7 @@ func (f *fakeStore) LatestAnalysesByEvaluation(context.Context, int64) (map[int6
 	return nil, nil
 }
 func (f *fakeStore) ListSpans(_ context.Context, id int64) ([]domain.Span, error) {
-	return []domain.Span{{Kind: "tool", Name: "ragSearch", DurationMs: 50, Attributes: json.RawMessage(`{"arguments":{"query":"cuota"}}`),
+	return []domain.Span{{Kind: "tool", Name: "search", DurationMs: 50, Attributes: json.RawMessage(`{"arguments":{"query":"cuota"}}`),
 		Documents: []domain.Document{{Rank: 1, URL: "https://bcp/x"}}}}, nil
 }
 func (f *fakeStore) AddAnalysis(_ context.Context, id int64, a domain.Analysis) (domain.Analysis, error) {
@@ -96,7 +96,7 @@ func TestAnalyzeTurnSendsFullContextAndStoresTheResult(t *testing.T) {
 	if len(r.Criteria) != 1 || string(r.Criteria[0].Params) != `{"pattern":"S/ 1,200"}` || r.Criteria[0].Explanation == "" {
 		t.Fatalf("rubric and results: %+v", r.Criteria)
 	}
-	if len(r.Tools) != 1 || r.Tools[0].Name != "ragSearch" || len(r.Documents) != 1 || len(r.Annotations) != 1 {
+	if len(r.Tools) != 1 || r.Tools[0].Name != "search" || len(r.Documents) != 1 || len(r.Annotations) != 1 {
 		t.Fatalf("traces and annotations: %+v", r)
 	}
 }

@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/agent"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/agent/fake"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/agent/hiringlab"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/api"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/tracing"
-	tracefake "github.com/jsolana/hiring-lab/part-2/backend/internal/tracing/fake"
-	tracehl "github.com/jsolana/hiring-lab/part-2/backend/internal/tracing/hiringlab"
+	"github.com/jsolana/agent-evaluator/backend/internal/agent"
+	"github.com/jsolana/agent-evaluator/backend/internal/agent/fake"
+	"github.com/jsolana/agent-evaluator/backend/internal/agent/hiringlab"
+	"github.com/jsolana/agent-evaluator/backend/internal/api"
+	"github.com/jsolana/agent-evaluator/backend/internal/tracing"
+	tracefake "github.com/jsolana/agent-evaluator/backend/internal/tracing/fake"
+	tracehl "github.com/jsolana/agent-evaluator/backend/internal/tracing/hiringlab"
 )
 
 // agentFactory builds an evaluated system from the environment: the agent, the

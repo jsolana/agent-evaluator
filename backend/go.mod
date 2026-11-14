@@ -1,4 +1,4 @@
-module github.com/jsolana/hiring-lab/part-2/backend
+module github.com/jsolana/agent-evaluator/backend
 
 go 1.25.1
 

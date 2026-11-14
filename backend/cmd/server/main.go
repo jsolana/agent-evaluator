@@ -15,14 +15,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/analysis"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/api"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/criteria"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/judge"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/queue/memory"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/runner"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/store"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/suite"
+	"github.com/jsolana/agent-evaluator/backend/internal/analysis"
+	"github.com/jsolana/agent-evaluator/backend/internal/api"
+	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
+	"github.com/jsolana/agent-evaluator/backend/internal/judge"
+	"github.com/jsolana/agent-evaluator/backend/internal/queue/memory"
+	"github.com/jsolana/agent-evaluator/backend/internal/runner"
+	"github.com/jsolana/agent-evaluator/backend/internal/store"
+	"github.com/jsolana/agent-evaluator/backend/internal/suite"
 )
 
 func main() {
@@ -50,7 +50,7 @@ func run(log *slog.Logger) error {
 	}
 	registry := criteria.NewRegistry(judgeImpl)
 
-	ag, traces, agentCheck, err := buildAgent(env("AGENT", "hiringlab"))
+	ag, traces, agentCheck, err := buildAgent(os.Getenv("AGENT"))
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func run(log *slog.Logger) error {
 		defer cancel()
 		_ = srv.Shutdown(shutdown)
 	}()
-	log.Info("listening", "addr", srv.Addr, "agent", env("AGENT", "hiringlab"))
+	log.Info("listening", "addr", srv.Addr, "agent", os.Getenv("AGENT"))
 	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}

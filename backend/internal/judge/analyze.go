@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/analysis"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/analysis"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 )
 
 const analysisSystemPrompt = `You audit the automatic evaluation of one turn of a conversation with %s.

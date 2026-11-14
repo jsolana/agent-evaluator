@@ -4,8 +4,8 @@ Feature: Multi-turn evaluation lifecycle
   So that I can see where a conversation breaks and whether a change helped
 
   The agent is a deterministic fake: it echoes "answer <n>: <question>" with a
-  ragSearch call, except for questions about the "cuota", where it answers
-  "La cuota sería de S/ 1,500 al mes" calling ragSearch and ragGetSourceChunks.
+  search call, except for questions about the "cuota", where it answers
+  "La cuota sería de S/ 1,500 al mes" calling search and getSource.
 
   Background:
     Given the evaluator is running with a fake agent
@@ -35,7 +35,7 @@ Feature: Multi-turn evaluation lifecycle
           name: "mortgage | follow-up"
           turns:
             - question: "¿Qué es el crédito MiVivienda?"
-              criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [ragSearch]}]
+              criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [search]}]
             - question: "¿Y cuánto sería la cuota?"
               criteria: [{type: regex, pattern: "S/ 1,200"}]
             - question: "Resume lo anterior"
@@ -60,15 +60,15 @@ Feature: Multi-turn evaluation lifecycle
     And in "baseline" scenario "mortgage" fails first at turn 2
     And in "baseline" the turns of scenario "mortgage" are:
       | turn | passed | answer                            | tools                         |
-      | 1    | yes    | answer 1: ¿Qué es el crédito MiVivienda? | ragSearch               |
-      | 2    | no     | La cuota sería de S/ 1,500 al mes | ragSearch, ragGetSourceChunks |
-      | 3    | yes    | answer 3: Resume lo anterior      | ragSearch                     |
+      | 1    | yes    | answer 1: ¿Qué es el crédito MiVivienda? | search               |
+      | 2    | no     | La cuota sería de S/ 1,500 al mes | search, getSource |
+      | 3    | yes    | answer 3: Resume lo anterior      | search                     |
     And in "baseline" turn 2 of "mortgage" fails criterion "regex" explaining "pattern not found: S/ 1,200"
     And in "baseline" the trace of scenario "mortgage" is:
       | turn | calls                         | tool ms | turn ms |
-      | 1    | ragSearch                     | 120     | 0       |
-      | 2    | ragSearch, ragGetSourceChunks | 300     | 0       |
-      | 3    | ragSearch                     | 120     | 0       |
+      | 1    | search                     | 120     | 0       |
+      | 2    | search, getSource | 300     | 0       |
+      | 3    | search                     | 120     | 0       |
 
     # Annotate the failure
     When I annotate turn 2 of "mortgage" in "baseline" as "rubric_too_strict":

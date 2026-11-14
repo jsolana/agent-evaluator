@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/criteria"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/suite"
+	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
+	"github.com/jsolana/agent-evaluator/backend/internal/suite"
 )
 
 const legacy = `name: "Synthetic"

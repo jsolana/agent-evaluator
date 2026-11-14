@@ -1,9 +1,9 @@
 # Multi-turn suite built from two synthetic scenarios (r2, see
-# docs/engineering-logbook/007-scenarios/examples/synthetic.scenarios.yaml),
+# Hiring Lab synthetic scenarios),
 # extended to 3 and 4 turns. Turns 1-2 keep the original, corpus-checked
 # expectations. New turns test what only a multi-turn run can show: use of
 # previous context, summarising without inventing, and an adversarial turn.
-# Facts checked against the knowledge snapshot (part-1/snapshot/knowledge.json):
+# Facts checked against the knowledge snapshot (the Hiring Lab knowledge snapshot):
 #   /pymes/cobros/cobros-a-clientes/afilia-tu-pos (and its duplicate
 #   /pymes/cobros/soluciones-cobro/afilia-tu-pos-a-una-cuenta-bcp):
 #     requisitos RUC / RUS / DNI, cuenta de ahorros o corriente BCP, negocio en

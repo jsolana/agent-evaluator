@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/queue"
+	"github.com/jsolana/agent-evaluator/backend/internal/queue"
 )
 
 func next(t *testing.T, ch <-chan queue.Delivery) queue.Delivery {

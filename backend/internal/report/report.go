@@ -5,8 +5,8 @@ package report
 import (
 	"context"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/store"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/store"
 )
 
 // StatusNotRun marks a defined turn that was never sent (e.g. after an execution error).

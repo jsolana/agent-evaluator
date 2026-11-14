@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/tracing"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/tracing"
 )
 
 type Source struct{}

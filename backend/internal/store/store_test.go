@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 )
 
 var ctx = context.Background()
@@ -95,7 +95,7 @@ func TestEvaluationLifecycleAndResults(t *testing.T) {
 	if err := s.UpdateTurnResult(ctx, tr); err != nil {
 		t.Fatal(err)
 	}
-	spans := []domain.Span{{Seq: 1, Kind: "tool", Name: "ragSearch", Documents: []domain.Document{{Rank: 1, URL: "u"}}, Attributes: json.RawMessage(`{"arguments":{}}`)}}
+	spans := []domain.Span{{Seq: 1, Kind: "tool", Name: "search", Documents: []domain.Document{{Rank: 1, URL: "u"}}, Attributes: json.RawMessage(`{"arguments":{}}`)}}
 	if err := s.SaveSpans(ctx, tr.ID, spans); err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestEvaluationLifecycleAndResults(t *testing.T) {
 		t.Fatalf("ListSpans = %+v", full)
 	}
 	light, _ := s.SpansByEvaluation(ctx, ev.ID)
-	if len(light[tr.ID]) != 1 || light[tr.ID][0].Name != "ragSearch" || light[tr.ID][0].Documents != nil {
+	if len(light[tr.ID]) != 1 || light[tr.ID][0].Name != "search" || light[tr.ID][0].Documents != nil {
 		t.Fatalf("SpansByEvaluation must be light: %+v", light)
 	}
 	crits, _ := s.CriterionResultsByEvaluation(ctx, ev.ID)

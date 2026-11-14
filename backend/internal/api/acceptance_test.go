@@ -15,7 +15,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 )
 
 // TestFeatures runs the acceptance criteria in features/*.feature against the

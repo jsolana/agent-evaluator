@@ -1,13 +1,13 @@
 // Package tracing defines how the core obtains the trace (spans) of a turn.
 // Agents instrumented with OpenTelemetry would be queried from a collector by
-// TraceRef; agents that return traces inline (e.g. Hiring Lab) parse Raw.
+// TraceRef; agents that return traces inline parse Raw.
 package tracing
 
 import (
 	"context"
 	"encoding/json"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 )
 
 type Query struct {

@@ -20,12 +20,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/agent"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/criteria"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/queue"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/store"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/tracing"
+	"github.com/jsolana/agent-evaluator/backend/internal/agent"
+	"github.com/jsolana/agent-evaluator/backend/internal/criteria"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/queue"
+	"github.com/jsolana/agent-evaluator/backend/internal/store"
+	"github.com/jsolana/agent-evaluator/backend/internal/tracing"
 )
 
 const Topic = "evaluations"

@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 	"gopkg.in/yaml.v3"
 )
 

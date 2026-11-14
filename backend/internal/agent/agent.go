@@ -1,5 +1,5 @@
 // Package agent defines the contract of the system under evaluation. Concrete
-// adapters (hiringlab, fake) live in subpackages; the core only sees this API.
+// adapters (e.g. fake) live in subpackages; the core only sees this API.
 package agent
 
 import (
@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
 )
 
 // Error classes let the runner decide on retries without knowing the adapter.

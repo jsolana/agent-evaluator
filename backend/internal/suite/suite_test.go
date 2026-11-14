@@ -38,7 +38,7 @@ scenarios:
           - type: llm_judge
             expected: "Describe ambos"
           - type: tools_required
-            tools: [ragSearch]
+            tools: [search]
       - question: "¿Y la cuota?"
         criteria: [{type: llm_judge, expected: "Sigue con el hipotecario"}]
       - question: "Resume"
@@ -61,7 +61,7 @@ func TestParseValidSuite(t *testing.T) {
 		t.Fatalf("turn indexes must be 1-based: %+v", sc.Turns)
 	}
 	c := sc.Turns[0].Criteria[1]
-	if c.Type != "tools_required" || string(c.Params) != `{"tools":["ragSearch"]}` {
+	if c.Type != "tools_required" || string(c.Params) != `{"tools":["search"]}` {
 		t.Fatalf("criterion params must exclude type: %s %s", c.Type, c.Params)
 	}
 	if s.ContentHash == "" || sc.Turns[0].ContentHash == "" || s.Source != validYAML {

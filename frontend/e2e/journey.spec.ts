@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// The fake agent answers "answer <n>: <question>" with one ragSearch call.
+// The fake agent answers "answer <n>: <question>" with one search call.
 // Version 1 expects "answer 9" in turn 2 of "pagos" (a wrong rubric); version 2 fixes it.
 const suite = (name: string, turn2: string) => `name: ${name}
 scenarios:
@@ -8,7 +8,7 @@ scenarios:
     name: "payments | follow-up"
     turns:
       - question: "¿Cómo pago mi tarjeta?"
-        criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [ragSearch]}]
+        criteria: [{type: regex, pattern: "answer 1"}, {type: tools_required, tools: [search]}]
       - question: "¿Y si pago tarde?"
         criteria: [{type: regex, pattern: "${turn2}"}]
       - question: "Resume lo anterior"
@@ -77,7 +77,7 @@ test("evaluate, review, trace, analyze, fix a rubric and compare", async ({ page
   await expect(page.getByText("Tool calls")).toBeVisible();
   await page.getByRole("button", { name: "Turno 2 trazas" }).click();
   const calls = page.getByRole("list", { name: "Llamadas del turno 2" });
-  await expect(calls.getByText("ragSearch")).toBeVisible();
+  await expect(calls.getByText("search")).toBeVisible();
   await expect(calls.getByText("modelo / orquestación")).toBeVisible();
 
   // 8. Fix the rubric in a new version and re-run.

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/domain"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/report"
-	"github.com/jsolana/hiring-lab/part-2/backend/internal/store"
+	"github.com/jsolana/agent-evaluator/backend/internal/domain"
+	"github.com/jsolana/agent-evaluator/backend/internal/report"
+	"github.com/jsolana/agent-evaluator/backend/internal/store"
 )
 
 func turn(i int, hash string, passed bool, tools ...string) report.TurnReport {
@@ -35,14 +35,14 @@ func evaluation(id int64, cfg string, scenarios ...report.ScenarioReport) report
 func TestEvaluationComparison(t *testing.T) {
 	base := evaluation(1, `{"promptId":"p1","config":{"topK":6}}`,
 		scenario("regressed", domain.ScenarioPassed, turn(1, "a", true), turn(2, "b", true)),
-		scenario("improved", domain.ScenarioFailed, turn(1, "c", false, "ragSearch")),
+		scenario("improved", domain.ScenarioFailed, turn(1, "c", false, "search")),
 		scenario("rubric", domain.ScenarioFailed, turn(1, "d", false)),
 		scenario("gone", domain.ScenarioPassed, turn(1, "e", true)),
 		scenario("broken", domain.ScenarioPassed, turn(1, "f", true)),
 	)
 	target := evaluation(2, `{"promptId":"p2","config":{"topK":6}}`,
 		scenario("regressed", domain.ScenarioFailed, turn(1, "a", true), turn(2, "b", false)),
-		scenario("improved", domain.ScenarioPassed, turn(1, "c", true, "ragSearch", "ragGetSourceChunks")),
+		scenario("improved", domain.ScenarioPassed, turn(1, "c", true, "search", "getSource")),
 		scenario("rubric", domain.ScenarioPassed, turn(1, "d2", true)),
 		scenario("new", domain.ScenarioPassed, turn(1, "g", true)),
 		scenario("broken", domain.ScenarioExecutionError, report.TurnReport{Index: 1, ContentHash: "f", Status: domain.TurnExecutionError}),
@@ -80,7 +80,7 @@ func TestEvaluationComparison(t *testing.T) {
 		t.Fatalf("turn verdicts %+v %+v", reg.Base, reg.Target)
 	}
 	imp := find(c, "improved")
-	if imp.ToolDelta["ragGetSourceChunks"] != 1 || imp.ToolDelta["ragSearch"] != 0 {
+	if imp.ToolDelta["getSource"] != 1 || imp.ToolDelta["search"] != 0 {
 		t.Fatalf("tool delta %+v", imp.ToolDelta)
 	}
 	if len(c.ConfigDiff) != 1 || c.ConfigDiff[0].Path != "promptId" {
@@ -98,14 +98,14 @@ func find(c EvaluationComparison, key string) ScenarioDiff {
 }
 
 func TestScenarioAndTurnComparison(t *testing.T) {
-	b := scenario("s", domain.ScenarioPassed, turn(1, "a", true, "ragSearch"), turn(2, "b", true), turn(3, "c", true))
-	tg := scenario("s", domain.ScenarioFailed, turn(1, "a", true, "ragSearch", "ragSearch"), turn(2, "b2", false))
+	b := scenario("s", domain.ScenarioPassed, turn(1, "a", true, "search"), turn(2, "b", true), turn(3, "c", true))
+	tg := scenario("s", domain.ScenarioFailed, turn(1, "a", true, "search", "search"), turn(2, "b2", false))
 	sc := Scenarios(&b, &tg)
 	if sc.Change != Changed || sc.Outcome != Regression || len(sc.Turns) != 3 {
 		t.Fatalf("scenario diff %+v", sc)
 	}
 	t1, t2, t3 := sc.Turns[0], sc.Turns[1], sc.Turns[2]
-	if t1.Change != Unchanged || t1.Outcome != StablePass || t1.ToolDelta["ragSearch"] != 1 {
+	if t1.Change != Unchanged || t1.Outcome != StablePass || t1.ToolDelta["search"] != 1 {
 		t.Fatalf("turn 1 %+v", t1)
 	}
 	if t2.Change != Changed || t2.Outcome != Regression {
