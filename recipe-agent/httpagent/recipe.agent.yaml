@@ -1,0 +1,14 @@
+# YAML-only connection: no Go code. Tokens come from the response; the latency is
+# measured by the evaluator, and no spans are produced (the agent has no tools).
+baseUrl: ${RECIPE_URL}
+conversation:
+  mode: stateless
+turn:
+  method: POST
+  path: /chat
+  body: '{"messages": {{ json .Messages }}}'
+response:
+  text: answer
+  tokens: usage.total_tokens
+errors:
+  retryable: [429, 5xx]

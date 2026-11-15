@@ -306,6 +306,17 @@ AGENT=myagent go run .
 
 Copy `backend/.env.example` as `.env` next to your `main.go`, with `AGENT=myagent` and your adapter's variables; the evaluator loads it from the working directory. To go back to the published module, drop the `replace` and run `go get github.com/jsolana/agent-evaluator/backend@v0.2.0`. You can keep the adapter in a separate module (it only needs `agentkit`) and keep the `main` in a thin one.
 
+## Example: integrating an existing agent
+
+[`recipe-agent/`](recipe-agent) is a complete, working example of connecting an agent that already exists. It is a small Python agent (recipes from what is in your fridge, hardened against prompt injection) that knows nothing about this project, plus everything needed to evaluate it with a real LLM:
+
+- **Both integration paths over the same agent.** [`httpagent/recipe.agent.yaml`](recipe-agent/httpagent/recipe.agent.yaml) connects it with YAML only (tokens and latency). [`adapter/`](recipe-agent/adapter) is a Go adapter in its own module that also returns tokens and latency from the agent's own telemetry and reads its execution traces by `TraceRef`.
+- **Execution traces with OpenInference.** The agent is instrumented with [OpenInference](https://github.com/Arize-ai/openinference) (no hand-written spans); the adapter maps those spans to `agentkit.Span`.
+- **A suite of 15 scenarios** (legitimate uses, out-of-scope questions and prompt-injection attempts) with `regex` and `llm_judge` criteria, the same for both paths.
+- **One command to run it all:** `make recipe-eval MODE=go|yaml` starts the agent and the evaluator, runs the suite and prints the result; `make recipe-eval-ui` also leaves the frontend up to explore it. `make recipe-ui` opens a chat with the agent.
+
+See [`recipe-agent/README.md`](recipe-agent/README.md). Copy `adapter/` and `httpagent/` as a starting point for your own agent.
+
 ## Add your own criteria
 
 Built-in criteria cover regexes, tools, sources and LLM rubrics. For anything else (no personal data in the answer, a latency budget, a house style) register your own: a type declared in the suite like any other (`- {type: max_words, limit: 80}`), with no change to the core. The contract is [`backend/criterionkit`](backend/criterionkit) (standard library plus `agentkit`).
@@ -395,6 +406,7 @@ frontend/
   src/ui         presentational components with primitive props
   src/features   suites · evaluation · conversation · traces · analysis · compare
 scenarios/       agent-agnostic example suites
+recipe-agent/    example of integrating a real agent (YAML and Go adapter, suite, traces); own Go module and Python venv
 ```
 
 - **Backend**: Go with the standard library and minimal dependencies. Runtime: `modernc.org/sqlite` (pure Go, embedded) and `gopkg.in/yaml.v3`; tests only: `github.com/cucumber/godog`.
