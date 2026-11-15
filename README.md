@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="Agent Evaluator mascot" width="160" height="160">
+  <img src="assets/evaluator-and-agent.jpg" alt="A Mortadelo-style evaluator scratching their bald head while checking an agent's answers on a laptop" width="520">
 </p>
 
 # Agent Evaluator
