@@ -13,6 +13,8 @@ It is **agent-agnostic**: the evaluated agent, its traces, the LLM judge and the
 | [`backend/`](backend/) | Go API: suites, async execution, per-turn criteria, LLM judge, analysis, comparison |
 | [`frontend/`](frontend/) | React SPA for reviewing and comparing evaluations |
 | [`scenarios/`](scenarios/example.suite.yaml) | Agent-agnostic example suite (runs offline with the fake agent) |
+| [`recipe-agent/`](recipe-agent/) | Complete example of integrating a real agent (Python, OpenInference traces) with a 15-scenario suite, both via YAML and via a Go adapter |
+| [`scripts/`](scripts/) | Repository tooling: `external-module-check.sh` verifies that a third-party module can build an adapter and a custom criterion using only the public API (`make` runs it in CI) |
 
 ## Why
 
@@ -347,6 +349,18 @@ func (c maxWords) Evaluate(_ context.Context, in criterionkit.Input) (criterionk
 The report and the UI need no change: unknown types are shown with their name and parameters.
 
 ## Using the interface
+
+The evaluation view shows the KPIs, where conversations break, criteria and tool usage, and a verdict per turn for every scenario:
+
+![Evaluation view: KPIs, where conversations break and scenario table with verdict per turn](assets/3-evaluation.png)
+
+Opening a turn shows the evidence, each criterion with its explanation, a second-opinion analysis (here flagging a possible false positive caused by a too-strict rubric) and annotations:
+
+![Turn drawer: criteria, evidence and second-opinion analysis](assets/5-turn-drawer.png)
+
+Comparing two runs shows deltas, regressions and improvements, rubric changes and the verdict strip of each scenario side by side:
+
+![Comparison of two runs: deltas, outcomes and verdicts per turn](assets/7-compare.png)
 
 | Route | View | API |
 |---|---|---|
